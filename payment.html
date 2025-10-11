@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán - Locket Gold</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .order-summary {
+            background: #f5f7fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .order-summary h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-row.total {
+            font-weight: bold;
+            font-size: 18px;
+            color: #667eea;
+            border-bottom: none;
+            border-top: 2px solid #667eea;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .payment-methods {
+            margin-bottom: 30px;
+        }
+
+        .payment-methods h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .payment-option {
+            border: 2px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .payment-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .payment-option .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .payment-option .name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .payment-option .desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .customer-info {
+            margin-bottom: 30px;
+        }
+
+        .customer-info h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .payment-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 Thanh Toán</h1>
+            <p>Hoàn tất đơn hàng của bạn</p>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <h3>📦 Tóm Tắt Đơn Hàng</h3>
+                <div class="summary-row">
+                    <span>Locket Gold Key</span>
+                    <span>30,000₫</span>
+                </div>
+                <div class="summary-row">
+                    <span>Phí xử lý</span>
+                    <span>0₫</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Tổng cộng</span>
+                    <span id="totalAmount">30,000₫</span>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="customer-info">
+                <h3>👤 Thông Tin Khách Hàng</h3>
+                <form id="customerForm">
+                    <div class="form-group">
+                        <label>Họ và tên *</label>
+                        <input type="text" name="fullName" required placeholder="Nguyễn Văn A">
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" name="email" required placeholder="example@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại *</label>
+                        <input type="tel" name="phone" required placeholder="0901234567">
+                    </div>
+                </form>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="payment-methods">
+                <h3>💳 Phương Thức Thanh Toán</h3>
+                <div class="payment-options">
+                    <div class="payment-option selected" data-method="vietqr" onclick="selectPayment('vietqr')">
+                        <div class="icon">🏦</div>
+                        <div class="name">VietQR</div>
+                        <div class="desc">Chuyển khoản ngân hàng</div>
+                    </div>
+                    <div class="payment-option" data-method="momo" onclick="selectPayment('momo')">
+                        <div class="icon">💰</div>
+                        <div class="name">MoMo</div>
+                        <div class="desc">Ví điện tử</div>
+                    </div>
+                    <div class="payment-option" data-method="vnpay" onclick="selectPayment('vnpay')">
+                        <div class="icon">💳</div>
+                        <div class="name">VNPay</div>
+                        <div class="desc">Cổng thanh toán</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Đang xử lý...</p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="goBack()">← Quay Lại</button>
+                <button class="btn btn-primary" onclick="processPayment()" id="payBtn">💳 Thanh Toán</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPayment = 'vietqr';
+        let orderData = {};
+
+        // Get order data from URL params
+        function getOrderData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const data = urlParams.get('data');
+            if (data) {
+                try {
+                    orderData = JSON.parse(decodeURIComponent(data));
+                } catch (e) {
+                    console.error('Error parsing order data:', e);
+                }
+            }
+        }
+
+        // Select payment method
+        function selectPayment(method) {
+            selectedPayment = method;
+            document.querySelectorAll('.payment-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        // Process payment
+        async function processPayment() {
+            const form = document.getElementById('customerForm');
+            const formData = new FormData(form);
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const customer = {
+                fullName: formData.get('fullName'),
+                email: formData.get('email'),
+                phone: formData.get('phone')
+            };
+
+            const order = {
+                customer,
+                items: [{
+                    id: 'locket-gold',
+                    name: 'Locket Gold Key',
+                    price: 30000,
+                    downloads: 1
+                }],
+                paymentMethod: selectedPayment,
+                total: 30000,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('payBtn').disabled = true;
+
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(order)
+                });
+
+                const result = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('payBtn').disabled = false;
+
+                if (result.success) {
+                    if (selectedPayment === 'vietqr') {
+                        // Redirect to VietQR page
+                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=30000&customer=${encodeURIComponent(customer.fullName)}`;
+                    } else {
+                        showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 3000);
+                    }
+                } else {
+                    showAlert('❌ Có lỗi xảy ra: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('payBtn').disabled = false;
+                showAlert('❌ Không thể kết nối đến server. Vui lòng thử lại!', 'error');
+            }
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            getOrderData();
+        });
+    </script>
+</body>
+</html>

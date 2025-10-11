@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán VietQR - Locket Gold</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .order-info {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .order-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 30px;
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 20px;
+        }
+
+        .qr-container img {
+            max-width: 300px;
+            width: 100%;
+            border-radius: 15px;
+        }
+
+        .bank-info {
+            background: #e8f5e8;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .bank-info h3 {
+            color: #2e7d32;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .bank-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .bank-detail {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .bank-detail .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .bank-detail .value {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .instructions {
+            background: #fff3e0;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .instructions h3 {
+            color: #f57c00;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .steps {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .steps li {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            padding-left: 40px;
+            position: relative;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #f57c00;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .bank-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 Thanh Toán VietQR</h1>
+            <p>Quét mã QR để thanh toán</p>
+        </div>
+
+        <div class="content">
+            <!-- Order Info -->
+            <div class="order-info">
+                <h3>📦 Thông Tin Đơn Hàng</h3>
+                <div class="info-row">
+                    <span>Mã đơn hàng:</span>
+                    <span id="orderId">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span>Số tiền:</span>
+                    <span id="amount">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span>Nội dung:</span>
+                    <span id="content">Loading...</span>
+                </div>
+            </div>
+
+            <!-- QR Code -->
+            <div class="qr-container">
+                <h3>📱 Quét Mã QR</h3>
+                <img id="qrImage" src="" alt="VietQR Code">
+                <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                    Mở app ngân hàng và quét mã QR để thanh toán
+                </p>
+            </div>
+
+            <!-- Bank Info -->
+            <div class="bank-info">
+                <h3>🏦 Thông Tin Chuyển Khoản</h3>
+                <div class="bank-details">
+                    <div class="bank-detail">
+                        <div class="label">Ngân hàng</div>
+                        <div class="value" id="bankName">VietinBank</div>
+                    </div>
+                    <div class="bank-detail">
+                        <div class="label">Số tài khoản</div>
+                        <div class="value" id="accountNumber">113366668888</div>
+                    </div>
+                    <div class="bank-detail">
+                        <div class="label">Chủ tài khoản</div>
+                        <div class="value" id="accountHolder">NGUYEN VAN A</div>
+                    </div>
+                    <div class="bank-detail">
+                        <div class="label">Nội dung</div>
+                        <div class="value" id="transferContent">LOCKET ORDER</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <h3>📋 Hướng Dẫn Thanh Toán</h3>
+                <ol class="steps">
+                    <li>Mở ứng dụng ngân hàng trên điện thoại</li>
+                    <li>Chọn chức năng "Chuyển khoản" hoặc "Quét QR"</li>
+                    <li>Quét mã QR ở trên hoặc nhập thông tin chuyển khoản</li>
+                    <li>Kiểm tra thông tin và xác nhận giao dịch</li>
+                    <li>Key kích hoạt sẽ được gửi qua email trong 5-10 phút</li>
+                </ol>
+            </div>
+
+            <!-- Status -->
+            <div class="status">
+                <strong>⏳ Đang chờ thanh toán...</strong><br>
+                <small>Vui lòng hoàn tất giao dịch để nhận key kích hoạt</small>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="copyBankInfo()">📋 Copy Thông Tin</button>
+                <button class="btn btn-primary" onclick="checkPayment()">🔄 Kiểm Tra Thanh Toán</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let orderId = '';
+        let amount = 0;
+        let content = '';
+
+        // Get data from URL params
+        function getDataFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            orderId = urlParams.get('orderId') || '';
+            amount = parseInt(urlParams.get('amount')) || 30000;
+            const customer = urlParams.get('customer') || '';
+            
+            content = `LOCKET ${orderId}`;
+            
+            // Update UI
+            document.getElementById('orderId').textContent = orderId;
+            document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
+            document.getElementById('content').textContent = content;
+            document.getElementById('transferContent').textContent = content;
+            
+            // Generate QR code
+            generateQRCode();
+        }
+
+        // Generate QR code using VietQR.io
+        function generateQRCode() {
+            const bankName = document.getElementById('bankName').textContent;
+            const accountNumber = document.getElementById('accountNumber').textContent;
+            
+            // Convert bank name to VietQR format
+            const bankCode = getBankCode(bankName);
+            const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}`;
+            document.getElementById('qrImage').src = qrImageUrl;
+        }
+
+        // Get bank code for VietQR
+        function getBankCode(bankName) {
+            const bankCodes = {
+                'VietinBank': 'vietinbank',
+                'Vietcombank': 'vietcombank', 
+                'BIDV': 'bidv',
+                'Agribank': 'agribank',
+                'Techcombank': 'techcombank',
+                'MB Bank': 'mbbank',
+                'MbBank': 'mbbank',
+                'ACB': 'acb',
+                'VPBank': 'vpbank',
+                'TPBank': 'tpbank',
+                'HDBank': 'hdbank',
+                'MSB': 'msb',
+                'VIB': 'vib',
+                'SHB': 'shb',
+                'Eximbank': 'eximbank',
+                'SCB': 'scb',
+                'OCB': 'ocb',
+                'SeABank': 'seabank',
+                'PGBank': 'pgbank',
+                'NamABank': 'namabank',
+                'ABBank': 'abbank',
+                'VietABank': 'vietabank',
+                'BacABank': 'bacabank',
+                'Kienlongbank': 'kienlongbank',
+                'LienVietPostBank': 'lienvietpostbank',
+                'PVcomBank': 'pvcombank',
+                'GPBank': 'gpbank',
+                'DongABank': 'dongabank',
+                'NCB': 'ncb',
+                'OceanBank': 'oceanbank',
+                'PublicBank': 'publicbank',
+                'CIMB': 'cimb',
+                'UOB': 'uob',
+                'HSBC': 'hsbc',
+                'Standard Chartered': 'standardchartered',
+                'ANZ': 'anz',
+                'Woori Bank': 'wooribank',
+                'Shinhan Bank': 'shinhanbank',
+                'Kookmin Bank': 'kookminbank',
+                'Keb Hana Bank': 'kebhanabank'
+            };
+            
+            return bankCodes[bankName] || 'vietinbank'; // Default to VietinBank if not found
+        }
+
+        // Copy bank info
+        function copyBankInfo() {
+            const bankName = document.getElementById('bankName').textContent;
+            const accountNumber = document.getElementById('accountNumber').textContent;
+            const accountHolder = document.getElementById('accountHolder').textContent;
+            
+            const bankInfo = `🏦 THÔNG TIN CHUYỂN KHOẢN
+Ngân hàng: ${bankName}
+STK: ${accountNumber}
+Chủ TK: ${accountHolder}
+Nội dung: ${content}
+Số tiền: ${new Intl.NumberFormat('vi-VN').format(amount)}₫`;
+            
+            navigator.clipboard.writeText(bankInfo).then(() => {
+                alert('✅ Đã copy thông tin chuyển khoản!');
+            });
+        }
+
+        // Check payment status
+        async function checkPayment() {
+            if (!orderId) {
+                alert('❌ Không tìm thấy mã đơn hàng!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.order.status === 'paid') {
+                        alert('✅ Thanh toán thành công! Key kích hoạt đã được gửi qua email.');
+                        window.location.href = 'index.html';
+                    } else {
+                        alert('⏳ Chưa nhận được thanh toán. Vui lòng thử lại sau.');
+                    }
+                } else {
+                    alert('❌ Không thể kiểm tra trạng thái đơn hàng.');
+                }
+            } catch (error) {
+                console.error('Error checking payment:', error);
+                alert('❌ Lỗi kết nối. Vui lòng thử lại.');
+            }
+        }
+
+        // Auto check payment every 30 seconds
+        function startAutoCheck() {
+            setInterval(() => {
+                if (orderId) {
+                    checkPayment();
+                }
+            }, 30000);
+        }
+
+        // Load payment config
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const config = result.config;
+                    document.getElementById('bankName').textContent = config.bankName;
+                    document.getElementById('accountNumber').textContent = config.accountNumber;
+                    document.getElementById('accountHolder').textContent = config.accountHolder;
+                    
+                    // Regenerate QR code with new bank info
+                    generateQRCode();
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            getDataFromURL();
+            loadPaymentConfig();
+            startAutoCheck();
+        });
+    </script>
+</body>
+</html>
