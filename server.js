@@ -48,7 +48,7 @@ function isValidAdminKey(adminKey) {
     if (adminKey === 'admin123') return true;
     
     // Check environment variable
-    if (adminKey === process.env.ADMIN_KEY) return true;
+    if (adminKey === process.env.adminKey) return true;
     
     return false;
 }
@@ -59,8 +59,8 @@ const emailConfig = {
     port: 587,
     secure: false,
     auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+        user: process.env.emailUser || 'your-email@gmail.com',
+        pass: process.env.emailPass || 'your-app-password'
     }
 };
 

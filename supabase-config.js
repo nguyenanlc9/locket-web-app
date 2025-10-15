@@ -2,8 +2,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase URL và Key (sẽ được set từ environment variables)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.supabaseUrl;
+const supabaseKey = process.env.supabaseAnonKey;
 
 // Tạo Supabase client
 const supabase = createClient(supabaseUrl, supabaseKey);
