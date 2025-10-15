@@ -14,6 +14,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Serve index.html for root route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Serve .mobileconfig files with correct MIME type
 app.get('*.mobileconfig', (req, res) => {
     res.setHeader('Content-Type', 'application/x-apple-aspen-config');
