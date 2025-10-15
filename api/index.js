@@ -1,42 +1,31 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from root directory
 app.use(express.static(path.join(__dirname, '..')));
 
 // Serve index.html for root route
 app.get('/', (req, res) => {
-    const filePath = path.join(__dirname, '..', 'index.html');
-    console.log('Serving index.html from:', filePath);
-    console.log('Current directory:', __dirname);
-    res.sendFile(filePath);
+    res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // Serve all HTML files
 app.get('*.html', (req, res) => {
     const filePath = path.join(__dirname, '..', req.path);
     console.log('Serving HTML file from:', filePath);
-    console.log('Current directory:', __dirname);
     
-    // Check if file exists
-    const fs = require('fs');
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
     } else {
         console.error('File not found:', filePath);
-        console.error('Available files in parent directory:');
-        try {
-            const parentDir = path.join(__dirname, '..');
-            const files = fs.readdirSync(parentDir);
-            console.error('Files:', files);
-        } catch (err) {
-            console.error('Cannot read parent directory:', err.message);
-        }
         res.status(404).send('File not found: ' + req.path);
     }
 });
