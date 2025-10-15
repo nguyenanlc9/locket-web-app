@@ -272,7 +272,7 @@
                 <h3>📦 Tóm Tắt Đơn Hàng</h3>
                 <div class="summary-row">
                     <span>Locket Gold Key</span>
-                    <span>30,000₫</span>
+                    <span id="productPrice">30,000₫</span>
                 </div>
                 <div class="summary-row">
                     <span>Phí xử lý</span>
@@ -392,16 +392,19 @@
                 phone: formData.get('phone')
             };
 
+            // Get price from config
+            const price = parseInt(document.getElementById('totalAmount').textContent.replace(/[^\d]/g, '')) || 30000;
+            
             const order = {
                 customer,
                 items: [{
                     id: 'locket-gold',
                     name: 'Locket Gold Key',
-                    price: 30000,
+                    price: price,
                     downloads: 1
                 }],
                 paymentMethod: selectedPayment,
-                total: 30000,
+                total: price,
                 timestamp: new Date().toISOString()
             };
 
@@ -446,9 +449,26 @@
             window.location.href = 'index.html';
         }
 
+        // Load payment config
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const price = result.config.productPrice || 30000;
+                    document.getElementById('productPrice').textContent = new Intl.NumberFormat('vi-VN').format(price) + '₫';
+                    document.getElementById('totalAmount').textContent = new Intl.NumberFormat('vi-VN').format(price) + '₫';
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+            }
+        }
+
         // Initialize
         window.addEventListener('load', () => {
             getOrderData();
+            loadPaymentConfig();
         });
     </script>
 </body>

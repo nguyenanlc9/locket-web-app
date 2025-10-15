@@ -1173,7 +1173,8 @@ app.get('/api/payment-config', async (req, res) => {
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
-            emailPass: 'your-app-password'
+            emailPass: 'your-app-password',
+            productPrice: 30000
         };
 
         // Only return public info (no email credentials)
@@ -1182,7 +1183,8 @@ app.get('/api/payment-config', async (req, res) => {
             config: {
                 bankName: config.bankName,
                 accountNumber: config.accountNumber,
-                accountHolder: config.accountHolder
+                accountHolder: config.accountHolder,
+                productPrice: config.productPrice
             }
         });
     } catch (error) {
@@ -1212,7 +1214,8 @@ app.get('/api/admin/payment-config', async (req, res) => {
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
-            emailPass: 'your-app-password'
+            emailPass: 'your-app-password',
+            productPrice: 30000
         };
 
         res.json({
@@ -1232,7 +1235,7 @@ app.get('/api/admin/payment-config', async (req, res) => {
 // API: Update Payment Config (Admin)
 app.post('/api/admin/payment-config', async (req, res) => {
     try {
-        const { adminKey, bankName, accountNumber, accountHolder, emailUser, emailPass } = req.body;
+        const { adminKey, bankName, accountNumber, accountHolder, emailUser, emailPass, productPrice } = req.body;
 
         if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
@@ -1243,11 +1246,12 @@ app.post('/api/admin/payment-config', async (req, res) => {
 
         const db = await readDB();
         db.paymentConfig = {
-            bankName: bankName || 'VietinBank',
+            bankName: bankName || 'MBBank',
             accountNumber: accountNumber || '113366668888',
             accountHolder: accountHolder || 'NGUYEN VAN A',
             emailUser: emailUser || 'your-email@gmail.com',
-            emailPass: emailPass || 'your-app-password'
+            emailPass: emailPass || 'your-app-password',
+            productPrice: productPrice || 30000
         };
 
         await writeDB(db);

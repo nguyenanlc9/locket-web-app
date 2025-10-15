@@ -580,7 +580,7 @@
                     <div class="pricing-card featured">
                         <div class="pricing-badge">HOT</div>
                         <h3>Locket Gold Key</h3>
-                        <div class="price">30,000₫</div>
+                        <div class="price" id="productPrice">30,000₫</div>
                         <ul class="features">
                             <li>✓ 1 lượt tải trên thiết bị</li>
                             <li>✓ Shadowrocket Premium</li>
@@ -814,11 +814,27 @@
         }
 
 
+        // Load payment config
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const price = result.config.productPrice || 30000;
+                    document.getElementById('productPrice').textContent = new Intl.NumberFormat('vi-VN').format(price) + '₫';
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+            }
+        }
+
         // Check on page load
         window.addEventListener('load', () => {
             if (checkIfAlreadyDownloaded()) {
                 showAlert('⚠️ Thiết bị này đã tải xuống trước đó.', 'warning');
             }
+            loadPaymentConfig();
         });
     </script>
 </body>
