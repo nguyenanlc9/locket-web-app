@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { initDatabase, db } = require('./database');
+const { db } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,7 +21,7 @@ app.get('*.mobileconfig', (req, res) => {
     res.sendFile(path.join(__dirname, req.path));
 });
 
-// Database initialization will be handled by database.js
+// Database initialization will be handled by supabase-config.js
 
 // Generate unique order ID
 function generateOrderId() {
@@ -439,27 +439,21 @@ app.post('/api/orders', async (req, res) => {
             });
         }
 
-        const db = await readDB();
         const orderId = generateOrderId();
         const downloadToken = generateDownloadToken();
 
         // Create order
-        const order = {
+        const orderData = {
             orderId,
             customer,
             items,
             paymentMethod,
             total,
-            status: 'pending', // pending, paid, completed, cancelled
             downloadToken,
-            downloadLimit: items.reduce((sum, item) => sum + (item.downloads || 0), 0),
-            downloadCount: 0,
-            createdAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         };
 
-        db.orders.push(order);
-        await writeDB(db);
+        await db.createOrder(orderData);
 
         // Send new order notification to Telegram
         await sendNewOrderNotification(
@@ -1329,23 +1323,18 @@ function generateVNPayPaymentUrl(orderId, amount) {
 }
 
 // Start server
-initDatabase().then(() => {
-    app.listen(PORT, () => {
-        console.log(`
+app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║     🚀 Locket Gold Server Started                         ║
 ║                                                            ║
 ║     🏠 Home:         http://localhost:${PORT}/              ║
 ║     👨‍💼 Admin:       http://localhost:${PORT}/admin.html   ║
 ║                                                            ║
-║     💾 Database: PostgreSQL (Persistent)                 ║
+║     💾 Database: Supabase (Persistent)                   ║
 ║     🔐 Admin Key: admin123                                ║
 ║     🎁 Demo Keys: DEMO-2024-GOLD, TEST-KEY-12345          ║
 ╚════════════════════════════════════════════════════════════╝
-        `);
-    });
-}).catch(error => {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    `);
 });
 
