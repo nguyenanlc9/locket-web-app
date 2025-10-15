@@ -11,12 +11,24 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // Serve index.html for root route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'index.html'));
+    const filePath = path.join(__dirname, '..', 'index.html');
+    console.log('Serving index.html from:', filePath);
+    res.sendFile(filePath);
 });
 
 // Serve all HTML files
 app.get('*.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', req.path));
+    const filePath = path.join(__dirname, '..', req.path);
+    console.log('Serving HTML file from:', filePath);
+    
+    // Check if file exists
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        console.error('File not found:', filePath);
+        res.status(404).send('File not found: ' + req.path);
+    }
 });
 
 // Serve .mobileconfig files with correct MIME type
