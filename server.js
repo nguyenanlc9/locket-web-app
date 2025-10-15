@@ -19,6 +19,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve all HTML files
+app.get('*.html', (req, res) => {
+    res.sendFile(path.join(__dirname, req.path));
+});
+
 // Serve .mobileconfig files with correct MIME type
 app.get('*.mobileconfig', (req, res) => {
     res.setHeader('Content-Type', 'application/x-apple-aspen-config');
