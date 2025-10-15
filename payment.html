@@ -272,7 +272,7 @@
                 <h3>📦 Tóm Tắt Đơn Hàng</h3>
                 <div class="summary-row">
                     <span>Locket Gold Key</span>
-                    <span id="productPrice">30,000₫</span>
+                    <span>30,000₫</span>
                 </div>
                 <div class="summary-row">
                     <span>Phí xử lý</span>
@@ -392,19 +392,16 @@
                 phone: formData.get('phone')
             };
 
-            // Get price from config
-            const price = parseInt(document.getElementById('totalAmount').textContent.replace(/[^\d]/g, '')) || 30000;
-            
             const order = {
                 customer,
                 items: [{
                     id: 'locket-gold',
                     name: 'Locket Gold Key',
-                    price: price,
+                    price: 30000,
                     downloads: 1
                 }],
                 paymentMethod: selectedPayment,
-                total: price,
+                total: 30000,
                 timestamp: new Date().toISOString()
             };
 
@@ -412,11 +409,11 @@
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('payBtn').disabled = true;
 
-                const response = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(order)
-                });
+                 const response = await fetch('https://your-project-ref.supabase.co/functions/v1/orders', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(order)
+                 });
 
                 const result = await response.json();
 
@@ -426,7 +423,7 @@
                 if (result.success) {
                     if (selectedPayment === 'vietqr') {
                         // Redirect to VietQR page
-                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=${price}&customer=${encodeURIComponent(customer.fullName)}`;
+                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=30000&customer=${encodeURIComponent(customer.fullName)}`;
                     } else {
                         showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
                         setTimeout(() => {
@@ -449,26 +446,9 @@
             window.location.href = 'index.html';
         }
 
-        // Load payment config
-        async function loadPaymentConfig() {
-            try {
-                const response = await fetch('/api/payment-config');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const price = result.config.productPrice || 30000;
-                    document.getElementById('productPrice').textContent = new Intl.NumberFormat('vi-VN').format(price) + '₫';
-                    document.getElementById('totalAmount').textContent = new Intl.NumberFormat('vi-VN').format(price) + '₫';
-                }
-            } catch (error) {
-                console.error('Error loading payment config:', error);
-            }
-        }
-
         // Initialize
         window.addEventListener('load', () => {
             getOrderData();
-            loadPaymentConfig();
         });
     </script>
 </body>

@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { db } = require('./supabase-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,16 +13,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Serve index.html for root route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Serve all HTML files
-app.get('*.html', (req, res) => {
-    res.sendFile(path.join(__dirname, req.path));
-});
-
 // Serve .mobileconfig files with correct MIME type
 app.get('*.mobileconfig', (req, res) => {
     res.setHeader('Content-Type', 'application/x-apple-aspen-config');
@@ -31,7 +20,37 @@ app.get('*.mobileconfig', (req, res) => {
     res.sendFile(path.join(__dirname, req.path));
 });
 
-// Database initialization will be handled by supabase-config.js
+// Database (JSON file - for simple implementation)
+const DB_FILE = path.join(__dirname, 'database.json');
+
+// Initialize database
+async function initDatabase() {
+    try {
+        await fs.access(DB_FILE);
+    } catch {
+        await fs.writeFile(DB_FILE, JSON.stringify({
+            orders: [],
+            downloads: [],
+            keys: [
+                // Demo keys
+                { key: 'DEMO-2024-GOLD', used: false, createdAt: new Date().toISOString() },
+                { key: 'TEST-KEY-12345', used: false, createdAt: new Date().toISOString() }
+            ],
+            deviceDownloads: []
+        }, null, 2));
+    }
+}
+
+// Read database
+async function readDB() {
+    const data = await fs.readFile(DB_FILE, 'utf8');
+    return JSON.parse(data);
+}
+
+// Write database
+async function writeDB(data) {
+    await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2));
+}
 
 // Generate unique order ID
 function generateOrderId() {
@@ -58,7 +77,7 @@ function isValidAdminKey(adminKey) {
     if (adminKey === 'admin123') return true;
     
     // Check environment variable
-    if (adminKey === process.env.adminKey) return true;
+    if (adminKey === process.env.ADMIN_KEY) return true;
     
     return false;
 }
@@ -69,8 +88,8 @@ const emailConfig = {
     port: 587,
     secure: false,
     auth: {
-        user: process.env.emailUser || 'your-email@gmail.com',
-        pass: process.env.emailPass || 'your-app-password'
+        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.EMAIL_PASS || 'your-app-password'
     }
 };
 
@@ -449,21 +468,27 @@ app.post('/api/orders', async (req, res) => {
             });
         }
 
+        const db = await readDB();
         const orderId = generateOrderId();
         const downloadToken = generateDownloadToken();
 
         // Create order
-        const orderData = {
+        const order = {
             orderId,
             customer,
             items,
             paymentMethod,
             total,
+            status: 'pending', // pending, paid, completed, cancelled
             downloadToken,
+            downloadLimit: items.reduce((sum, item) => sum + (item.downloads || 0), 0),
+            downloadCount: 0,
+            createdAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         };
 
-        await db.createOrder(orderData);
+        db.orders.push(order);
+        await writeDB(db);
 
         // Send new order notification to Telegram
         await sendNewOrderNotification(
@@ -1144,12 +1169,11 @@ app.get('/api/payment-config', async (req, res) => {
     try {
         const db = await readDB();
         const config = db.paymentConfig || {
-            bankName: 'MBBank',
+            bankName: 'VietinBank',
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
-            emailPass: 'your-app-password',
-            productPrice: 30000
+            emailPass: 'your-app-password'
         };
 
         // Only return public info (no email credentials)
@@ -1158,8 +1182,7 @@ app.get('/api/payment-config', async (req, res) => {
             config: {
                 bankName: config.bankName,
                 accountNumber: config.accountNumber,
-                accountHolder: config.accountHolder,
-                productPrice: config.productPrice
+                accountHolder: config.accountHolder
             }
         });
     } catch (error) {
@@ -1185,12 +1208,11 @@ app.get('/api/admin/payment-config', async (req, res) => {
 
         const db = await readDB();
         const config = db.paymentConfig || {
-            bankName: 'MBBank',
+            bankName: 'VietinBank',
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
-            emailPass: 'your-app-password',
-            productPrice: 30000
+            emailPass: 'your-app-password'
         };
 
         res.json({
@@ -1210,7 +1232,7 @@ app.get('/api/admin/payment-config', async (req, res) => {
 // API: Update Payment Config (Admin)
 app.post('/api/admin/payment-config', async (req, res) => {
     try {
-        const { adminKey, bankName, accountNumber, accountHolder, emailUser, emailPass, productPrice } = req.body;
+        const { adminKey, bankName, accountNumber, accountHolder, emailUser, emailPass } = req.body;
 
         if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
@@ -1221,12 +1243,11 @@ app.post('/api/admin/payment-config', async (req, res) => {
 
         const db = await readDB();
         db.paymentConfig = {
-            bankName: bankName || 'MBBank',
+            bankName: bankName || 'VietinBank',
             accountNumber: accountNumber || '113366668888',
             accountHolder: accountHolder || 'NGUYEN VAN A',
             emailUser: emailUser || 'your-email@gmail.com',
-            emailPass: emailPass || 'your-app-password',
-            productPrice: productPrice || 30000
+            emailPass: emailPass || 'your-app-password'
         };
 
         await writeDB(db);
@@ -1333,18 +1354,20 @@ function generateVNPayPaymentUrl(orderId, amount) {
 }
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`
+initDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║     🚀 Locket Gold Server Started                         ║
 ║                                                            ║
 ║     🏠 Home:         http://localhost:${PORT}/              ║
 ║     👨‍💼 Admin:       http://localhost:${PORT}/admin.html   ║
 ║                                                            ║
-║     💾 Database: Supabase (Persistent)                   ║
+║     💾 Database: database.json                            ║
 ║     🔐 Admin Key: admin123                                ║
 ║     🎁 Demo Keys: DEMO-2024-GOLD, TEST-KEY-12345          ║
 ╚════════════════════════════════════════════════════════════╝
-    `);
+        `);
+    });
 });
 

@@ -265,7 +265,7 @@
                 <div class="bank-details">
                     <div class="bank-detail">
                         <div class="label">Ngân hàng</div>
-                        <div class="value" id="bankName">MBBank</div>
+                        <div class="value" id="bankName">VietinBank</div>
                     </div>
                     <div class="bank-detail">
                         <div class="label">Số tài khoản</div>
@@ -317,48 +317,19 @@
         function getDataFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             orderId = urlParams.get('orderId') || '';
-            const urlAmount = urlParams.get('amount');
+            amount = parseInt(urlParams.get('amount')) || 30000;
             const customer = urlParams.get('customer') || '';
-            
-            // If no amount in URL, we'll get it from config later
-            if (urlAmount) {
-                amount = parseInt(urlAmount);
-            }
             
             content = `LOCKET ${orderId}`;
             
             // Update UI
             document.getElementById('orderId').textContent = orderId;
-            if (amount) {
-                document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-            }
+            document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
             document.getElementById('content').textContent = content;
             document.getElementById('transferContent').textContent = content;
             
-            // Generate QR code if we have amount
-            if (amount) {
-                generateQRCode();
-            }
-        }
-
-        // Load payment config to get current price
-        async function loadPaymentConfig() {
-            try {
-                const response = await fetch('/api/payment-config');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const configPrice = result.config.productPrice || 30000;
-                    // Use config price if no amount from URL
-                    if (!amount) {
-                        amount = configPrice;
-                        document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-                        generateQRCode();
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading payment config:', error);
-            }
+            // Generate QR code
+            generateQRCode();
         }
 
         // Generate QR code using VietQR.io
@@ -417,7 +388,7 @@
                 'Keb Hana Bank': 'kebhanabank'
             };
             
-            return bankCodes[bankName] || 'mbbank'; // Default to MBBank if not found
+            return bankCodes[bankName] || 'vietinbank'; // Default to VietinBank if not found
         }
 
         // Copy bank info
@@ -495,9 +466,9 @@ Số tiền: ${new Intl.NumberFormat('vi-VN').format(amount)}₫`;
         }
 
         // Initialize
-        window.addEventListener('load', async () => {
+        window.addEventListener('load', () => {
             getDataFromURL();
-            await loadPaymentConfig();
+            loadPaymentConfig();
             startAutoCheck();
         });
     </script>
