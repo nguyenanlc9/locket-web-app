@@ -1169,7 +1169,7 @@ app.get('/api/payment-config', async (req, res) => {
     try {
         const db = await readDB();
         const config = db.paymentConfig || {
-            bankName: 'VietinBank',
+            bankName: 'MBBank',
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
@@ -1208,7 +1208,7 @@ app.get('/api/admin/payment-config', async (req, res) => {
 
         const db = await readDB();
         const config = db.paymentConfig || {
-            bankName: 'VietinBank',
+            bankName: 'MBBank',
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
             emailUser: 'your-email@gmail.com',
