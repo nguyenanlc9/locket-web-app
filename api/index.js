@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, '..')));
 app.get('/', (req, res) => {
     const filePath = path.join(__dirname, '..', 'index.html');
     console.log('Serving index.html from:', filePath);
+    console.log('Current directory:', __dirname);
     res.sendFile(filePath);
 });
 
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 app.get('*.html', (req, res) => {
     const filePath = path.join(__dirname, '..', req.path);
     console.log('Serving HTML file from:', filePath);
+    console.log('Current directory:', __dirname);
     
     // Check if file exists
     const fs = require('fs');
@@ -27,6 +29,14 @@ app.get('*.html', (req, res) => {
         res.sendFile(filePath);
     } else {
         console.error('File not found:', filePath);
+        console.error('Available files in parent directory:');
+        try {
+            const parentDir = path.join(__dirname, '..');
+            const files = fs.readdirSync(parentDir);
+            console.error('Files:', files);
+        } catch (err) {
+            console.error('Cannot read parent directory:', err.message);
+        }
         res.status(404).send('File not found: ' + req.path);
     }
 });
