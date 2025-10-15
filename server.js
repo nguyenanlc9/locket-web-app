@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { initDatabase, db } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,37 +21,7 @@ app.get('*.mobileconfig', (req, res) => {
     res.sendFile(path.join(__dirname, req.path));
 });
 
-// Database (JSON file - for simple implementation)
-const DB_FILE = path.join(__dirname, 'database.json');
-
-// Initialize database
-async function initDatabase() {
-    try {
-        await fs.access(DB_FILE);
-    } catch {
-        await fs.writeFile(DB_FILE, JSON.stringify({
-            orders: [],
-            downloads: [],
-            keys: [
-                // Demo keys
-                { key: 'DEMO-2024-GOLD', used: false, createdAt: new Date().toISOString() },
-                { key: 'TEST-KEY-12345', used: false, createdAt: new Date().toISOString() }
-            ],
-            deviceDownloads: []
-        }, null, 2));
-    }
-}
-
-// Read database
-async function readDB() {
-    const data = await fs.readFile(DB_FILE, 'utf8');
-    return JSON.parse(data);
-}
-
-// Write database
-async function writeDB(data) {
-    await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2));
-}
+// Database initialization will be handled by database.js
 
 // Generate unique order ID
 function generateOrderId() {
@@ -1367,11 +1338,14 @@ initDatabase().then(() => {
 ║     🏠 Home:         http://localhost:${PORT}/              ║
 ║     👨‍💼 Admin:       http://localhost:${PORT}/admin.html   ║
 ║                                                            ║
-║     💾 Database: database.json                            ║
+║     💾 Database: PostgreSQL (Persistent)                 ║
 ║     🔐 Admin Key: admin123                                ║
 ║     🎁 Demo Keys: DEMO-2024-GOLD, TEST-KEY-12345          ║
 ╚════════════════════════════════════════════════════════════╝
         `);
     });
+}).catch(error => {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
 });
 
