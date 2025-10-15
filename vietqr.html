@@ -317,19 +317,28 @@
         function getDataFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             orderId = urlParams.get('orderId') || '';
-            amount = parseInt(urlParams.get('amount')) || 30000;
+            const urlAmount = urlParams.get('amount');
             const customer = urlParams.get('customer') || '';
+            
+            // If no amount in URL, we'll get it from config later
+            if (urlAmount) {
+                amount = parseInt(urlAmount);
+            }
             
             content = `LOCKET ${orderId}`;
             
             // Update UI
             document.getElementById('orderId').textContent = orderId;
-            document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
+            if (amount) {
+                document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
+            }
             document.getElementById('content').textContent = content;
             document.getElementById('transferContent').textContent = content;
             
-            // Generate QR code
-            generateQRCode();
+            // Generate QR code if we have amount
+            if (amount) {
+                generateQRCode();
+            }
         }
 
         // Load payment config to get current price
@@ -338,10 +347,14 @@
                 const response = await fetch('/api/payment-config');
                 const result = await response.json();
                 
-                if (result.success && !amount) {
-                    amount = result.config.productPrice || 30000;
-                    document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-                    generateQRCode();
+                if (result.success) {
+                    const configPrice = result.config.productPrice || 30000;
+                    // Use config price if no amount from URL
+                    if (!amount) {
+                        amount = configPrice;
+                        document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
+                        generateQRCode();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading payment config:', error);
@@ -482,9 +495,9 @@ Số tiền: ${new Intl.NumberFormat('vi-VN').format(amount)}₫`;
         }
 
         // Initialize
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             getDataFromURL();
-            loadPaymentConfig();
+            await loadPaymentConfig();
             startAutoCheck();
         });
     </script>
