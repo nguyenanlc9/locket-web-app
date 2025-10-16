@@ -6,6 +6,8 @@ yarn-error.log*
 
 # Database
 database.json
+data/
+backups/
 
 # Environment variables
 .env

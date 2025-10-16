@@ -38,23 +38,55 @@ app.get('/vietqr', (req, res) => {
 });
 
 // Database (JSON file - for simple implementation)
-const DB_FILE = path.join(__dirname, 'database.json');
+const DB_DIR = path.join(__dirname, 'data');
+const DB_FILE = path.join(DB_DIR, 'database.json');
 
 // Initialize database
 async function initDatabase() {
     try {
+        // Create data directory if it doesn't exist
+        await fs.mkdir(DB_DIR, { recursive: true });
+        
+        // Check if database file exists
         await fs.access(DB_FILE);
+        console.log('✅ Database file exists');
     } catch {
-        await fs.writeFile(DB_FILE, JSON.stringify({
+        // Create new database with sample data
+        const initialData = {
             orders: [],
             downloads: [],
             keys: [
                 // Demo keys
-                { key: 'DEMO-2024-GOLD', used: false, createdAt: new Date().toISOString() },
-                { key: 'TEST-KEY-12345', used: false, createdAt: new Date().toISOString() }
+                { 
+                    key: 'DEMO-2024-GOLD', 
+                    used: false, 
+                    createdAt: new Date().toISOString(),
+                    createdBy: 'system'
+                },
+                { 
+                    key: 'TEST-KEY-12345', 
+                    used: false, 
+                    createdAt: new Date().toISOString(),
+                    createdBy: 'system'
+                }
             ],
-            deviceDownloads: []
-        }, null, 2));
+            deviceDownloads: [],
+            paymentConfig: {
+                bankName: 'VietinBank',
+                accountNumber: '113366668888',
+                accountHolder: 'NGUYEN VAN A',
+                productPrice: 30000,
+                emailUser: 'your-email@gmail.com',
+                emailPass: 'your-app-password'
+            },
+            telegramConfig: {
+                botToken: '',
+                chatId: ''
+            }
+        };
+        
+        await fs.writeFile(DB_FILE, JSON.stringify(initialData, null, 2));
+        console.log('✅ Database initialized with sample data');
     }
 }
 
