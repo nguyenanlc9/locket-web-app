@@ -113,6 +113,68 @@ const emailConfig = {
 // Create email transporter
 const transporter = nodemailer.createTransport(emailConfig);
 
+// Send Telegram notification for new order
+async function sendNewOrderNotification(customerName, orderId, total, paymentMethod) {
+    try {
+        const db = await readDB();
+        const telegramConfig = db.telegramConfig;
+        
+        if (!telegramConfig || !telegramConfig.botToken || !telegramConfig.chatId) {
+            console.log('Telegram config not found, skipping new order notification');
+            return;
+        }
+
+        const message = `🛒 *ĐƠN HÀNG MỚI*
+
+👤 *Khách hàng:* ${customerName}
+🆔 *Mã đơn hàng:* \`${orderId}\`
+💰 *Số tiền:* ${new Intl.NumberFormat('vi-VN').format(total)}₫
+💳 *Phương thức:* ${paymentMethod === 'vietqr' ? 'Chuyển khoản' : paymentMethod.toUpperCase()}
+
+⏰ *Thời gian:* ${new Date().toLocaleString('vi-VN')}
+
+🔔 Nhấn nút bên dưới để xác nhận thanh toán!`;
+
+        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
+        
+        const response = await fetch(telegramUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: telegramConfig.chatId,
+                text: message,
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "✅ Xác nhận thanh toán",
+                                callback_data: `confirm_${orderId}`
+                            }
+                        ],
+                        [
+                            {
+                                text: "❌ Từ chối đơn hàng",
+                                callback_data: `reject_${orderId}`
+                            }
+                        ]
+                    ]
+                }
+            })
+        });
+
+        if (response.ok) {
+            console.log(`✅ New order notification sent for order ${orderId}`);
+        } else {
+            console.error('❌ Failed to send new order notification:', await response.text());
+        }
+    } catch (error) {
+        console.error('❌ Error sending new order notification:', error);
+    }
+}
+
 // Send email function
 async function sendActivationKey(customerEmail, customerName, activationKey, orderId) {
     try {
@@ -724,6 +786,40 @@ app.post('/api/admin/telegram-config', async (req, res) => {
 
         await writeDB(db);
 
+        // Test Telegram connection
+        if (botToken && chatId) {
+            try {
+                const testMessage = `🤖 *Test Message từ Locket Gold*
+                
+⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}
+✅ Bot đã được cấu hình thành công!
+
+Bạn sẽ nhận được thông báo khi có đơn hàng mới.`;
+
+                const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                
+                const response = await fetch(telegramUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: testMessage,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('✅ Test message sent to Telegram successfully');
+                } else {
+                    console.error('❌ Failed to send test message to Telegram:', await response.text());
+                }
+            } catch (telegramError) {
+                console.error('❌ Error testing Telegram connection:', telegramError);
+            }
+        }
+
         res.json({
             success: true,
             message: 'Cấu hình Telegram đã được lưu thành công'
@@ -768,6 +864,70 @@ app.post('/api/admin/payment-config', async (req, res) => {
 
     } catch (error) {
         console.error('Error updating payment config:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server'
+        });
+    }
+});
+
+// API: Test Telegram (Admin)
+app.post('/api/admin/test-telegram', async (req, res) => {
+    try {
+        const { adminKey } = req.body;
+
+        if (!isValidAdminKey(adminKey)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin key không hợp lệ'
+            });
+        }
+
+        const db = await readDB();
+        const telegramConfig = db.telegramConfig;
+        
+        if (!telegramConfig || !telegramConfig.botToken || !telegramConfig.chatId) {
+            return res.json({
+                success: false,
+                message: 'Chưa cấu hình Telegram'
+            });
+        }
+
+        const testMessage = `🧪 *TEST MESSAGE*
+
+⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}
+✅ Bot Telegram hoạt động bình thường!
+
+Bạn sẽ nhận được thông báo khi có đơn hàng mới.`;
+
+        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
+        
+        const response = await fetch(telegramUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: telegramConfig.chatId,
+                text: testMessage,
+                parse_mode: 'Markdown'
+            })
+        });
+
+        if (response.ok) {
+            res.json({
+                success: true,
+                message: 'Test message đã được gửi thành công!'
+            });
+        } else {
+            const errorText = await response.text();
+            res.json({
+                success: false,
+                message: 'Lỗi gửi message: ' + errorText
+            });
+        }
+    } catch (error) {
+        console.error('Error testing Telegram:', error);
         res.status(500).json({
             success: false,
             message: 'Lỗi server'

@@ -620,6 +620,7 @@
                         </div>
                         
                         <button type="submit" class="btn btn-primary">💾 Lưu Cấu Hình</button>
+                        <button type="button" onclick="testTelegram()" class="btn btn-secondary" style="margin-left: 10px;">🧪 Test Telegram</button>
                     </form>
                     
                     <div style="background: #e8f5e8; padding: 20px; border-radius: 15px; margin-top: 20px;">
@@ -1124,6 +1125,28 @@
                 loadKeys();
             }
         }, 30000);
+
+        // Test Telegram function
+        async function testTelegram() {
+            try {
+                const response = await fetch('/api/admin/test-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminKey: adminKey })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('telegramAlert', '✅ Test message đã được gửi thành công!', 'success');
+                } else {
+                    showAlert('telegramAlert', '❌ Lỗi: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error testing Telegram:', error);
+                showAlert('telegramAlert', '❌ Lỗi kết nối server', 'error');
+            }
+        }
     </script>
 </body>
 </html>
