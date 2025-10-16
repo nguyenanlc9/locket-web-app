@@ -17,10 +17,10 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install dependencies
+      - name: Install dependencies and generate lock file
         shell: cmd
         run: |
-          npm ci
+          npm install
 
       - name: Copy files to deployment folder
         shell: cmd
@@ -28,6 +28,7 @@ jobs:
           if not exist "%USERPROFILE%\web" mkdir "%USERPROFILE%\web"
           copy "%GITHUB_WORKSPACE%\server.js" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\package.json" "%USERPROFILE%\web\"
+          if exist "%GITHUB_WORKSPACE%\package-lock.json" copy "%GITHUB_WORKSPACE%\package-lock.json" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.html" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.mobileconfig" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.md" "%USERPROFILE%\web\"
