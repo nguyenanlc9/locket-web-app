@@ -94,7 +94,7 @@ const emailConfig = {
 };
 
 // Create email transporter
-const transporter = nodemailer.createTransporter(emailConfig);
+const transporter = nodemailer.createTransport(emailConfig);
 
 // Send email function
 async function sendActivationKey(customerEmail, customerName, activationKey, orderId) {
@@ -112,7 +112,7 @@ async function sendActivationKey(customerEmail, customerName, activationKey, ord
         };
 
         // Create new transporter with updated config
-        const transporter = nodemailer.createTransporter(emailConfig);
+        const transporter = nodemailer.createTransport(emailConfig);
 
         const mailOptions = {
             from: emailConfig.auth.user,
