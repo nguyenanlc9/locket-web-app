@@ -6,9 +6,9 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Windows]   # giữ đúng label 'Windows' như runner của bạn
+    runs-on: [self-hosted, Windows]
 
-    # ÉP mặc định dùng Windows PowerShell (không phải pwsh)
+    # ép toàn bộ script dùng PowerShell 5.1 thay vì pwsh
     defaults:
       run:
         shell: powershell
@@ -32,7 +32,7 @@ jobs:
         run: |
           $src = "$env:GITHUB_WORKSPACE\"
           $dst = "C:\web\"
-          robocopy $src $dst /MIR /XD ".git" "node_modules" ".github" "tests" /XF ".env"
+          robocopy $src $dst /MIR /XD ".git" "node_modules" ".github" /XF ".env"
           if ($LASTEXITCODE -ge 8) { throw "RoboCopy failed with exit code $LASTEXITCODE" }
 
       - name: Install production deps in C:\web
@@ -42,7 +42,6 @@ jobs:
 
       - name: Start/Reload PM2 app "server"
         run: |
-          # Nếu pm2 không có trong PATH, dùng bản .cmd trong AppData (thường cài global)
           $pm2 = (Get-Command pm2 -ErrorAction SilentlyContinue)
           if (-not $pm2) {
             $pm2cmd = "$env:APPDATA\npm\pm2.cmd"
