@@ -455,6 +455,15 @@ app.post('/api/orders', async (req, res) => {
         db.orders.push(order);
         await writeDB(db);
 
+        // Send new order notification to Telegram
+        console.log(`📤 Sending Telegram notification for order ${orderId}`);
+        await sendNewOrderNotification(
+            customer.fullName,
+            orderId,
+            total,
+            paymentMethod
+        );
+
         // Generate payment URL based on payment method
         let paymentUrl = '';
         if (paymentMethod === 'bank') {
