@@ -22,28 +22,28 @@ jobs:
         run: |
           npm ci
 
-      - name: Copy files to C:\web
+      - name: Copy files to deployment folder
         shell: cmd
         run: |
-          if not exist "C:\web" mkdir "C:\web"
-          copy "%GITHUB_WORKSPACE%\server.js" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\package.json" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\*.html" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\*.mobileconfig" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\*.md" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\*.bat" "C:\web\"
-          copy "%GITHUB_WORKSPACE%\*.sh" "C:\web\"
-          if exist "C:\web\.env" del "C:\web\.env"
+          if not exist "%USERPROFILE%\web" mkdir "%USERPROFILE%\web"
+          copy "%GITHUB_WORKSPACE%\server.js" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\package.json" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\*.html" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\*.mobileconfig" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\*.md" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\*.bat" "%USERPROFILE%\web\"
+          copy "%GITHUB_WORKSPACE%\*.sh" "%USERPROFILE%\web\"
+          if exist "%USERPROFILE%\web\.env" del "%USERPROFILE%\web\.env"
 
       - name: Install production dependencies
         shell: cmd
         run: |
-          cd /d C:\web
+          cd /d "%USERPROFILE%\web"
           npm ci --omit=dev
 
       - name: Restart PM2 application
         shell: cmd
         run: |
           pm2 stop server 2>nul || echo "App not running"
-          pm2 start C:\web\server.js --name server
+          pm2 start "%USERPROFILE%\web\server.js" --name server
           pm2 save
