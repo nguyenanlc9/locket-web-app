@@ -42,9 +42,17 @@ jobs:
           cd /d "%USERPROFILE%\web"
           npm ci --omit=dev
 
-      - name: Restart PM2 application
+      - name: Create startup script
         shell: cmd
         run: |
-          pm2 stop server 2>nul || echo "App not running"
-          pm2 start "%USERPROFILE%\web\server.js" --name server
-          pm2 save
+          echo @echo off > "%USERPROFILE%\web\start-server.bat"
+          echo cd /d "%USERPROFILE%\web" >> "%USERPROFILE%\web\start-server.bat"
+          echo node server.js >> "%USERPROFILE%\web\start-server.bat"
+
+      - name: Stop and restart application
+        shell: cmd
+        run: |
+          taskkill /F /IM node.exe 2>nul || echo "No Node.js processes running"
+          timeout /t 2 /nobreak >nul
+          cd /d "%USERPROFILE%\web"
+          start /B start-server.bat
