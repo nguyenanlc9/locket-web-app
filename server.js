@@ -976,6 +976,178 @@ Bạn sẽ nhận được thông báo khi có đơn hàng mới.`;
     }
 });
 
+// API: Handle Telegram Callback
+app.post('/api/telegram/callback', async (req, res) => {
+    try {
+        const { callback_query } = req.body;
+        
+        if (!callback_query) {
+            return res.status(400).json({ success: false });
+        }
+
+        const { data, message, from, id: callbackId } = callback_query;
+        const chatId = message.chat.id;
+        const messageId = message.message_id;
+
+        // Answer callback query to stop loading
+        await answerCallbackQuery(callbackId, "Đang xử lý...");
+
+        // Check if it's a confirm or reject action
+        if (data.startsWith('confirm_')) {
+            const orderId = data.replace('confirm_', '');
+            
+            // Confirm payment
+            const db = await readDB();
+            const order = db.orders.find(o => o.orderId === orderId);
+            
+            if (!order) {
+                await sendTelegramMessage(chatId, `❌ Không tìm thấy đơn hàng ${orderId}`, messageId);
+                return res.json({ success: true });
+            }
+
+            if (order.status === 'paid') {
+                await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã được xác nhận rồi!`, messageId);
+                return res.json({ success: true });
+            }
+
+            // Mark as paid
+            order.status = 'paid';
+            order.paidAt = new Date().toISOString();
+            await writeDB(db);
+
+            // Generate new activation key
+            try {
+                const newKey = generateActivationKey();
+                
+                // Create new key record
+                const keyRecord = {
+                    key: newKey,
+                    used: true,
+                    createdAt: new Date().toISOString(),
+                    usedAt: new Date().toISOString(),
+                    usedBy: order.customer.email,
+                    deviceFingerprint: 'telegram-confirmation',
+                    orderId: orderId
+                };
+                
+                db.keys.push(keyRecord);
+                await writeDB(db);
+                
+                // Send email
+                await sendActivationKey(
+                    order.customer.email,
+                    order.customer.fullName,
+                    newKey,
+                    orderId
+                );
+                
+                // Send success notification
+                await sendTelegramMessage(chatId, 
+                    `✅ *Đã xác nhận thanh toán thành công!*\n\n` +
+                    `🆔 Đơn hàng: \`${orderId}\`\n` +
+                    `👤 Khách hàng: ${order.customer.fullName}\n` +
+                    `🔑 Key kích hoạt: \`${newKey}\`\n` +
+                    `📧 Email đã gửi: ${order.customer.email}`, 
+                    messageId
+                );
+
+                // Answer callback with success
+                await answerCallbackQuery(callbackId, "✅ Đã xác nhận thanh toán thành công!", true);
+                
+                console.log(`Order ${orderId} confirmed via Telegram and new key ${newKey} sent to ${order.customer.email}`);
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
+                await sendTelegramMessage(chatId, `⚠️ Đã xác nhận nhưng lỗi gửi email. Key: \`${newKey}\``, messageId);
+            }
+
+        } else if (data.startsWith('reject_')) {
+            const orderId = data.replace('reject_', '');
+            
+            // Reject order
+            const db = await readDB();
+            const order = db.orders.find(o => o.orderId === orderId);
+            
+            if (order) {
+                order.status = 'cancelled';
+                order.cancelledAt = new Date().toISOString();
+                await writeDB(db);
+                
+                await sendTelegramMessage(chatId, `❌ Đã từ chối đơn hàng ${orderId}`, messageId);
+                
+                // Answer callback with rejection
+                await answerCallbackQuery(callbackId, "❌ Đã từ chối đơn hàng", true);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error handling Telegram callback:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Helper function to answer callback query
+async function answerCallbackQuery(callbackId, text = null, showAlert = false) {
+    try {
+        const db = await readDB();
+        const telegramConfig = db.telegramConfig;
+        
+        if (!telegramConfig || !telegramConfig.botToken) {
+            return;
+        }
+
+        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/answerCallbackQuery`;
+        
+        await fetch(telegramUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                callback_query_id: callbackId,
+                text: text,
+                show_alert: showAlert
+            })
+        });
+    } catch (error) {
+        console.error('Error answering callback query:', error);
+    }
+}
+
+// Helper function to send Telegram message
+async function sendTelegramMessage(chatId, text, replyToMessageId = null) {
+    try {
+        const db = await readDB();
+        const telegramConfig = db.telegramConfig;
+        
+        if (!telegramConfig || !telegramConfig.botToken) {
+            return;
+        }
+
+        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
+        
+        const payload = {
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'Markdown'
+        };
+
+        if (replyToMessageId) {
+            payload.reply_to_message_id = replyToMessageId;
+        }
+        
+        await fetch(telegramUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+    } catch (error) {
+        console.error('Error sending Telegram message:', error);
+    }
+}
+
 // API: Get All Orders (Admin)
 app.get('/api/admin/orders', async (req, res) => {
     try {
