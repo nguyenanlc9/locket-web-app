@@ -859,6 +859,11 @@ app.post('/api/admin/telegram-config', async (req, res) => {
 
         await writeDB(db);
 
+        // Start Telegram polling if bot token is provided
+        if (botToken) {
+            startTelegramPolling(botToken);
+        }
+
         // Test Telegram connection
         if (botToken && chatId) {
             try {
@@ -1315,6 +1320,147 @@ app.get('/api/admin/orders', async (req, res) => {
     }
 });
 
+// Telegram polling function
+let telegramPollingInterval = null;
+
+function startTelegramPolling(botToken) {
+    // Clear existing polling
+    if (telegramPollingInterval) {
+        clearInterval(telegramPollingInterval);
+    }
+    
+    let lastUpdateId = 0;
+    
+    telegramPollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`);
+            const data = await response.json();
+            
+            if (data.ok && data.result.length > 0) {
+                for (const update of data.result) {
+                    lastUpdateId = update.update_id;
+                    
+                    if (update.callback_query) {
+                        // Handle callback query
+                        await handleTelegramCallback(update.callback_query);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error polling Telegram updates:', error);
+        }
+    }, 1000); // Poll every 1 second
+    
+    console.log('✅ Telegram polling started');
+}
+
+// Handle Telegram callback
+async function handleTelegramCallback(callback_query) {
+    try {
+        const { data, message, from, id: callbackId } = callback_query;
+        const chatId = message.chat.id;
+        const messageId = message.message_id;
+
+        console.log(`📱 Processing Telegram callback: ${data}`);
+
+        // Answer callback query to stop loading
+        await answerCallbackQuery(callbackId, "Đang xử lý...");
+
+        // Check if it's a confirm or reject action
+        if (data.startsWith('confirm_')) {
+            const orderId = data.replace('confirm_', '');
+            console.log(`✅ Processing confirm for order: ${orderId}`);
+            
+            // Confirm payment
+            const db = await readDB();
+            const order = db.orders.find(o => o.orderId === orderId);
+            
+            if (!order) {
+                await sendTelegramMessage(chatId, `❌ Không tìm thấy đơn hàng ${orderId}`, messageId);
+                return;
+            }
+
+            if (order.status === 'paid') {
+                await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã được xác nhận rồi!`, messageId);
+                return;
+            }
+
+            // Mark as paid
+            order.status = 'paid';
+            order.paidAt = new Date().toISOString();
+            await writeDB(db);
+
+            // Generate new activation key
+            try {
+                const newKey = generateActivationKey();
+                
+                // Create new key record
+                const keyRecord = {
+                    key: newKey,
+                    used: true,
+                    createdAt: new Date().toISOString(),
+                    usedAt: new Date().toISOString(),
+                    usedBy: order.customer.email,
+                    deviceFingerprint: 'telegram-confirmation',
+                    orderId: orderId
+                };
+                
+                db.keys.push(keyRecord);
+                await writeDB(db);
+                
+                // Send email
+                await sendActivationKey(
+                    order.customer.email,
+                    order.customer.fullName,
+                    newKey,
+                    orderId
+                );
+                
+                // Send success notification
+                await sendTelegramMessage(chatId, 
+                    `✅ *Đã xác nhận thanh toán thành công!*\n\n` +
+                    `🆔 Đơn hàng: \`${orderId}\`\n` +
+                    `👤 Khách hàng: ${order.customer.fullName}\n` +
+                    `📧 Email: \`${order.customer.email}\`\n` +
+                    `📱 SĐT: \`${order.customer.phone}\`\n` +
+                    `🔑 Key kích hoạt: \`${newKey}\`\n` +
+                    `📧 Email đã gửi: ${order.customer.email}`, 
+                    messageId
+                );
+
+                // Answer callback with success
+                await answerCallbackQuery(callbackId, "✅ Đã xác nhận thanh toán thành công!", true);
+                
+                console.log(`Order ${orderId} confirmed via Telegram and new key ${newKey} sent to ${order.customer.email}`);
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
+                await sendTelegramMessage(chatId, `⚠️ Đã xác nhận nhưng lỗi gửi email. Key: \`${newKey}\``, messageId);
+            }
+
+        } else if (data.startsWith('reject_')) {
+            const orderId = data.replace('reject_', '');
+            console.log(`❌ Processing reject for order: ${orderId}`);
+            
+            // Reject order
+            const db = await readDB();
+            const order = db.orders.find(o => o.orderId === orderId);
+            
+            if (order) {
+                order.status = 'cancelled';
+                order.cancelledAt = new Date().toISOString();
+                await writeDB(db);
+                
+                await sendTelegramMessage(chatId, `❌ Đã từ chối đơn hàng ${orderId}`, messageId);
+                
+                // Answer callback with rejection
+                await answerCallbackQuery(callbackId, "❌ Đã từ chối đơn hàng", true);
+            }
+        }
+    } catch (error) {
+        console.error('Error handling Telegram callback:', error);
+    }
+}
+
 // Start server
 initDatabase().then(() => {
     app.listen(PORT, () => {
@@ -1325,7 +1471,7 @@ initDatabase().then(() => {
 ║     🏠 Home:         http://localhost:${PORT}/              ║
 ║     👨‍💼 Admin:       http://localhost:${PORT}/admin.html   ║
 ║                                                            ║
-║     💾 Database: data/database.json                       ║
+║     💾 Database: database.json                            ║
 ║     🔐 Admin Key: admin123                                ║
 ║     🎁 Demo Keys: DEMO-2024-GOLD, TEST-KEY-12345          ║
 ╚════════════════════════════════════════════════════════════╝
