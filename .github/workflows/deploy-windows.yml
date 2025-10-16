@@ -1,51 +1,38 @@
-name: Deploy to Windows VPS (C:\web)
+name: Deploy to Windows VPS
 
 on:
   push:
-    branches: [ "main" ]   # đổi nếu bạn deploy nhánh khác
+    branches: [ "main" ]
 
 jobs:
   deploy:
-    runs-on: self-hosted    # dùng runner đang cài trong VPS Windows của bạn
+    runs-on: self-hosted
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      # (Tuỳ dự án) Build trước rồi mới copy, nếu bạn có bước build
-      - name: Install deps & build (in workspace)
-        shell: pwsh
+      - name: Install dependencies
         run: |
-          cd $env:GITHUB_WORKSPACE
           npm ci
-          npm run build --if-present
 
-      - name: Sync code to C:\web (mirror but keep .env)
-        shell: pwsh
+      - name: Copy files to C:\web
         run: |
-          $src = "$env:GITHUB_WORKSPACE\"
-          $dst = "C:\web\"
-          # Mirror nhưng bỏ các thư mục không cần và KHÔNG đè .env trên server
-          robocopy $src $dst /MIR /XD ".git" "node_modules" ".github" "tests" /XF ".env" | Out-Null
+          xcopy /E /I /Y "%GITHUB_WORKSPACE%\*" "C:\web\"
+          if exist "C:\web\.env" del "C:\web\.env"
 
-      - name: Install production deps in C:\web
-        shell: pwsh
-        working-directory: C:\web
+      - name: Install production dependencies
         run: |
+          cd /d C:\web
           npm ci --omit=dev
 
-      - name: Start/Reload PM2 app "server"
-        shell: pwsh
+      - name: Restart PM2 application
         run: |
-          pm2 list | findstr /C:"server"
-          if ($LASTEXITCODE -eq 0) {
-            pm2 reload server
-          } else {
-            pm2 start C:\web\server.js --name server
-          }
+          pm2 stop server 2>nul || echo "App not running"
+          pm2 start C:\web\server.js --name server
           pm2 save
