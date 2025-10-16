@@ -18,20 +18,24 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
+        shell: cmd
         run: |
           npm ci
 
       - name: Copy files to C:\web
+        shell: cmd
         run: |
           xcopy /E /I /Y "%GITHUB_WORKSPACE%\*" "C:\web\"
           if exist "C:\web\.env" del "C:\web\.env"
 
       - name: Install production dependencies
+        shell: cmd
         run: |
           cd /d C:\web
           npm ci --omit=dev
 
       - name: Restart PM2 application
+        shell: cmd
         run: |
           pm2 stop server 2>nul || echo "App not running"
           pm2 start C:\web\server.js --name server
