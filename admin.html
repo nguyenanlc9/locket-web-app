@@ -830,7 +830,7 @@
             if (!confirm('Xác nhận đơn hàng này đã thanh toán?')) return;
 
             try {
-                const response = await fetch('/api/payment/bank/confirm', {
+                const response = await fetch('/api/admin/confirm-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ orderId, adminKey })
@@ -839,7 +839,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('✅ Đã xác nhận thanh toán!');
+                    alert('✅ Đã xác nhận thanh toán và gửi key qua email!');
                     closeModal();
                     loadOrders();
                 } else {

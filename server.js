@@ -13,6 +13,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Get real IP address
+app.use((req, res, next) => {
+    req.ip = req.headers['x-forwarded-for'] || 
+             req.headers['x-real-ip'] || 
+             req.connection.remoteAddress || 
+             req.socket.remoteAddress ||
+             (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+             '127.0.0.1';
+    next();
+});
+
 // Serve .mobileconfig files with correct MIME type
 app.get('*.mobileconfig', (req, res) => {
     res.setHeader('Content-Type', 'application/x-apple-aspen-config');
@@ -1163,6 +1174,89 @@ async function sendTelegramMessage(chatId, text, replyToMessageId = null) {
         console.error('Error sending Telegram message:', error);
     }
 }
+
+// API: Confirm Order (Admin)
+app.post('/api/admin/confirm-order', async (req, res) => {
+    try {
+        const { adminKey, orderId } = req.body;
+
+        if (!isValidAdminKey(adminKey)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin key không hợp lệ'
+            });
+        }
+
+        const db = await readDB();
+        const order = db.orders.find(o => o.orderId === orderId);
+        
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        if (order.status === 'paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'Đơn hàng đã được xác nhận rồi'
+            });
+        }
+
+        // Mark as paid
+        order.status = 'paid';
+        order.paidAt = new Date().toISOString();
+        await writeDB(db);
+
+        // Generate new activation key
+        const newKey = generateActivationKey();
+        
+        // Create new key record
+        const keyRecord = {
+            key: newKey,
+            used: true,
+            createdAt: new Date().toISOString(),
+            usedAt: new Date().toISOString(),
+            usedBy: order.customer.email,
+            deviceFingerprint: 'admin-confirmation',
+            orderId: orderId
+        };
+        
+        db.keys.push(keyRecord);
+        await writeDB(db);
+        
+        // Send email
+        try {
+            await sendActivationKey(
+                order.customer.email,
+                order.customer.fullName,
+                newKey,
+                orderId
+            );
+            
+            res.json({
+                success: true,
+                message: 'Đã xác nhận đơn hàng và gửi key qua email',
+                key: newKey
+            });
+        } catch (emailError) {
+            console.error('Error sending email:', emailError);
+            res.json({
+                success: true,
+                message: 'Đã xác nhận đơn hàng nhưng lỗi gửi email',
+                key: newKey,
+                emailError: emailError.message
+            });
+        }
+    } catch (error) {
+        console.error('Error confirming order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server'
+        });
+    }
+});
 
 // API: Get All Orders (Admin)
 app.get('/api/admin/orders', async (req, res) => {
