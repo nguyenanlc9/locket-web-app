@@ -112,4 +112,4 @@ Nếu có vấn đề, vui lòng kiểm tra logs:
 npm run pm2:logs
 ```
 
-aaaasd
+Test auto deploy 16/10
