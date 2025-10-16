@@ -52,6 +52,14 @@ npm run pm2:restart   # Khởi động lại
 npm run pm2:logs      # Xem logs
 ```
 
+## URL Structure
+
+- **Trang chủ:** `http://your-vps-ip:3000/`
+- **Admin:** `http://your-vps-ip:3000/admin`
+- **Thanh toán:** `http://your-vps-ip:3000/payment`
+- **Download:** `http://your-vps-ip:3000/download`
+- **VietQR:** `http://your-vps-ip:3000/vietqr`
+
 ## Cấu trúc dự án
 
 ```

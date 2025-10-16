@@ -20,6 +20,23 @@ app.get('*.mobileconfig', (req, res) => {
     res.sendFile(path.join(__dirname, req.path));
 });
 
+// Routes without .html extension
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+app.get('/payment', (req, res) => {
+    res.sendFile(path.join(__dirname, 'payment.html'));
+});
+
+app.get('/download', (req, res) => {
+    res.sendFile(path.join(__dirname, 'download.html'));
+});
+
+app.get('/vietqr', (req, res) => {
+    res.sendFile(path.join(__dirname, 'vietqr.html'));
+});
+
 // Database (JSON file - for simple implementation)
 const DB_FILE = path.join(__dirname, 'database.json');
 

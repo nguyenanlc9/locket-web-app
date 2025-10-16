@@ -423,11 +423,11 @@
                 if (result.success) {
                     if (selectedPayment === 'vietqr') {
                         // Redirect to VietQR page
-                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=30000&customer=${encodeURIComponent(customer.fullName)}`;
+                        window.location.href = `/vietqr?orderId=${result.orderId}&amount=30000&customer=${encodeURIComponent(customer.fullName)}`;
                     } else {
                         showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
                         setTimeout(() => {
-                            window.location.href = 'index.html';
+                            window.location.href = '/';
                         }, 3000);
                     }
                 } else {
@@ -443,7 +443,7 @@
 
         // Go back
         function goBack() {
-            window.location.href = 'index.html';
+            window.location.href = '/';
         }
 
         // Initialize

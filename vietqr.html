@@ -423,7 +423,7 @@ Số tiền: ${new Intl.NumberFormat('vi-VN').format(amount)}₫`;
                 if (result.success) {
                     if (result.order.status === 'paid') {
                         alert('✅ Thanh toán thành công! Key kích hoạt đã được gửi qua email.');
-                        window.location.href = 'index.html';
+                        window.location.href = '/';
                     } else {
                         alert('⏳ Chưa nhận được thanh toán. Vui lòng thử lại sau.');
                     }
