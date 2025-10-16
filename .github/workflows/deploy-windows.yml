@@ -34,6 +34,7 @@ jobs:
           copy "%GITHUB_WORKSPACE%\*.md" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.bat" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.sh" "%USERPROFILE%\web\"
+          if exist "%GITHUB_WORKSPACE%\data" xcopy /E /I /Y "%GITHUB_WORKSPACE%\data" "%USERPROFILE%\web\data\"
           if exist "%USERPROFILE%\web\.env" del "%USERPROFILE%\web\.env"
 
       - name: Install production dependencies
@@ -55,4 +56,10 @@ jobs:
           taskkill /F /IM node.exe 2>nul || echo "No Node.js processes running"
           timeout /t 2 /nobreak >nul
           cd /d "%USERPROFILE%\web"
-          start /B start-server.bat
+          if exist "data\database.json" (
+            echo Database exists, starting server...
+            start /B node server.js
+          ) else (
+            echo Database not found, initializing...
+            node server.js
+          )
