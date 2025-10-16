@@ -146,7 +146,7 @@ const emailConfig = {
 const transporter = nodemailer.createTransport(emailConfig);
 
 // Send Telegram notification for new order
-async function sendNewOrderNotification(customerName, orderId, total, paymentMethod) {
+async function sendNewOrderNotification(customerName, orderId, total, paymentMethod, customerInfo, clientIP) {
     try {
         const db = await readDB();
         const telegramConfig = db.telegramConfig;
@@ -162,6 +162,10 @@ async function sendNewOrderNotification(customerName, orderId, total, paymentMet
 🆔 *Mã đơn hàng:* \`${orderId}\`
 💰 *Số tiền:* ${new Intl.NumberFormat('vi-VN').format(total)}₫
 💳 *Phương thức:* ${paymentMethod === 'vietqr' ? 'Chuyển khoản' : paymentMethod.toUpperCase()}
+
+📧 *Email:* \`${customerInfo.email}\`
+📱 *Số điện thoại:* \`${customerInfo.phone}\`
+🌐 *IP Address:* \`${clientIP || 'Unknown'}\`
 
 ⏰ *Thời gian:* ${new Date().toLocaleString('vi-VN')}
 
@@ -493,7 +497,9 @@ app.post('/api/orders', async (req, res) => {
             customer.fullName,
             orderId,
             total,
-            paymentMethod
+            paymentMethod,
+            customer,
+            req.ip
         );
 
         // Generate payment URL based on payment method
@@ -714,9 +720,10 @@ app.get('/api/payment-config', async (req, res) => {
     try {
         const db = await readDB();
         const config = db.paymentConfig || {
-            bankName: 'VietinBank',
-            accountNumber: '113366668888',
-            accountHolder: 'NGUYEN VAN A',
+            bankName: 'MBBank',
+            accountNumber: '1613072005',
+            accountHolder: 'NGUYEN HUYNH TUONG AN',
+            productPrice: 30000,
             emailUser: 'your-email@gmail.com',
             emailPass: 'your-app-password'
         };
@@ -979,9 +986,12 @@ Bạn sẽ nhận được thông báo khi có đơn hàng mới.`;
 // API: Handle Telegram Callback
 app.post('/api/telegram/callback', async (req, res) => {
     try {
+        console.log('📱 Received Telegram callback:', JSON.stringify(req.body, null, 2));
+        
         const { callback_query } = req.body;
         
         if (!callback_query) {
+            console.log('❌ No callback_query in request');
             return res.status(400).json({ success: false });
         }
 
@@ -993,8 +1003,11 @@ app.post('/api/telegram/callback', async (req, res) => {
         await answerCallbackQuery(callbackId, "Đang xử lý...");
 
         // Check if it's a confirm or reject action
+        console.log(`🔍 Processing callback data: ${data}`);
+        
         if (data.startsWith('confirm_')) {
             const orderId = data.replace('confirm_', '');
+            console.log(`✅ Processing confirm for order: ${orderId}`);
             
             // Confirm payment
             const db = await readDB();
@@ -1046,6 +1059,8 @@ app.post('/api/telegram/callback', async (req, res) => {
                     `✅ *Đã xác nhận thanh toán thành công!*\n\n` +
                     `🆔 Đơn hàng: \`${orderId}\`\n` +
                     `👤 Khách hàng: ${order.customer.fullName}\n` +
+                    `📧 Email: \`${order.customer.email}\`\n` +
+                    `📱 SĐT: \`${order.customer.phone}\`\n` +
                     `🔑 Key kích hoạt: \`${newKey}\`\n` +
                     `📧 Email đã gửi: ${order.customer.email}`, 
                     messageId
@@ -1062,6 +1077,7 @@ app.post('/api/telegram/callback', async (req, res) => {
 
         } else if (data.startsWith('reject_')) {
             const orderId = data.replace('reject_', '');
+            console.log(`❌ Processing reject for order: ${orderId}`);
             
             // Reject order
             const db = await readDB();
