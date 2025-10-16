@@ -1,81 +1,105 @@
-# LocketWeb - Full-Stack App với Supabase
+# Locket Gold Shop - VPS Version
 
-## 🚀 Setup Supabase Backend
+Hệ thống bán Shadowrocket Premium + Config Gold với tính năng thanh toán và giới hạn download.
 
-### **1. Tạo Supabase Project:**
-1. Vào [supabase.com](https://supabase.com)
-2. Tạo project mới
-3. Lấy `Project URL` và `Anon Key`
+## Cài đặt trên VPS
 
-### **2. Setup Database:**
-1. Vào SQL Editor trong Supabase Dashboard
-2. Chạy file `supabase/schema.sql`
-3. Tables sẽ được tạo tự động
-
-### **3. Deploy Edge Functions:**
+### 1. Cài đặt Node.js
 ```bash
-# Install Supabase CLI
-npm install -g supabase
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-# Login to Supabase
-supabase login
-
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Deploy functions
-supabase functions deploy payment-config
-supabase functions deploy verify-key
-supabase functions deploy orders
+# CentOS/RHEL
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
 ```
 
-### **4. Cập nhật Frontend:**
-Thay `your-project-ref` trong các file HTML bằng project ref thực của bạn:
-
-```javascript
-// Thay đổi URL này
-const response = await fetch('https://your-project-ref.supabase.co/functions/v1/payment-config');
-```
-
-## 🎯 Features:
-- ✅ **Database**: PostgreSQL với Supabase
-- ✅ **API**: Edge Functions (Deno)
-- ✅ **Frontend**: HTML/CSS/JS
-- ✅ **Authentication**: Supabase Auth
-- ✅ **Real-time**: Supabase Realtime
-- ✅ **Storage**: Supabase Storage
-
-## 🔧 Environment Variables:
+### 2. Cài đặt PM2 (Process Manager)
 ```bash
-SUPABASE_URL=your-project-url
-SUPABASE_ANON_KEY=your-anon-key
+sudo npm install -g pm2
 ```
 
-## 📁 Project Structure:
-```
-├── supabase/
-│   ├── functions/
-│   │   ├── payment-config/
-│   │   ├── verify-key/
-│   │   └── orders/
-│   ├── schema.sql
-│   └── config.toml
-├── index.html
-├── payment.html
-├── admin.html
-├── vietqr.html
-└── README.md
+### 3. Cài đặt dependencies
+```bash
+npm install
 ```
 
-## 🚀 Deploy:
-1. **Frontend**: Deploy lên Vercel/Netlify
-2. **Backend**: Supabase tự động deploy
-3. **Database**: Supabase PostgreSQL
-4. **Functions**: Supabase Edge Functions
+### 4. Cấu hình biến môi trường (tùy chọn)
+```bash
+export ADMIN_KEY="your-secure-admin-key"
+export EMAIL_USER="your-email@gmail.com"
+export EMAIL_PASS="your-app-password"
+export PORT=3000
+```
 
-## 💡 Lợi ích:
-- ✅ **Miễn phí**: Supabase free tier
-- ✅ **Scalable**: Auto-scaling
-- ✅ **Real-time**: WebSocket support
-- ✅ **Security**: Built-in auth & RLS
-- ✅ **Global**: CDN worldwide
+### 5. Chạy ứng dụng
+
+#### Chạy trực tiếp:
+```bash
+npm start
+```
+
+#### Chạy với PM2 (khuyến nghị):
+```bash
+npm run pm2
+```
+
+#### Quản lý với PM2:
+```bash
+npm run pm2:stop      # Dừng
+npm run pm2:restart   # Khởi động lại
+npm run pm2:logs      # Xem logs
+```
+
+## Cấu trúc dự án
+
+```
+locketweb/
+├── server.js              # Server chính
+├── package.json           # Dependencies
+├── database.json          # Database (tự động tạo)
+├── index.html             # Trang chủ
+├── admin.html             # Trang admin
+├── payment.html           # Trang thanh toán
+├── download.html          # Trang download
+├── vietqr.html            # Trang VietQR
+└── LocketGoldDNS.mobileconfig  # File cấu hình DNS
+```
+
+## Tính năng
+
+- ✅ Hệ thống key kích hoạt
+- ✅ Quản lý đơn hàng
+- ✅ Thanh toán chuyển khoản
+- ✅ Gửi email tự động
+- ✅ Giới hạn download
+- ✅ Admin panel
+- ✅ Database JSON đơn giản
+
+## API Endpoints
+
+### Public
+- `POST /api/verify-key` - Xác thực key
+- `POST /api/orders` - Tạo đơn hàng
+- `GET /api/orders/:orderId` - Kiểm tra đơn hàng
+- `GET /api/payment-config` - Cấu hình thanh toán
+
+### Admin (cần adminKey)
+- `GET /api/admin/keys` - Xem tất cả keys
+- `POST /api/admin/generate-keys` - Tạo keys mới
+- `GET /api/admin/orders` - Xem tất cả đơn hàng
+- `POST /api/admin/payment-config` - Cập nhật cấu hình
+
+## Bảo mật
+
+- Admin key mặc định: `admin123`
+- Thay đổi admin key trong biến môi trường `ADMIN_KEY`
+- Cấu hình email trong admin panel
+
+## Hỗ trợ
+
+Nếu có vấn đề, vui lòng kiểm tra logs:
+```bash
+npm run pm2:logs
+```

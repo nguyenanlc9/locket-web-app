@@ -94,115 +94,7 @@ const emailConfig = {
 };
 
 // Create email transporter
-const transporter = nodemailer.createTransport(emailConfig);
-
-// Send Telegram notification for new order
-async function sendNewOrderNotification(customerName, orderId, total, paymentMethod) {
-    try {
-        const db = await readDB();
-        const telegramConfig = db.telegramConfig;
-        
-        if (!telegramConfig || !telegramConfig.botToken || !telegramConfig.chatId) {
-            console.log('Telegram config not found, skipping new order notification');
-            return;
-        }
-
-        const message = `🛒 *ĐƠN HÀNG MỚI*
-
-👤 *Khách hàng:* ${customerName}
-🆔 *Mã đơn hàng:* \`${orderId}\`
-💰 *Số tiền:* ${new Intl.NumberFormat('vi-VN').format(total)}₫
-💳 *Phương thức:* ${paymentMethod === 'vietqr' ? 'Chuyển khoản' : paymentMethod.toUpperCase()}
-
-⏰ *Thời gian:* ${new Date().toLocaleString('vi-VN')}
-
-🔔 Nhấn nút bên dưới để xác nhận thanh toán!`;
-
-        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
-        
-        const response = await fetch(telegramUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: telegramConfig.chatId,
-                text: message,
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: "✅ Xác nhận thanh toán",
-                                callback_data: `confirm_${orderId}`
-                            }
-                        ],
-                        [
-                            {
-                                text: "❌ Từ chối đơn hàng",
-                                callback_data: `reject_${orderId}`
-                            }
-                        ]
-                    ]
-                }
-            })
-        });
-
-        if (response.ok) {
-            console.log(`✅ New order notification sent for order ${orderId}`);
-        } else {
-            console.error('❌ Failed to send new order notification:', await response.text());
-        }
-    } catch (error) {
-        console.error('❌ Error sending new order notification:', error);
-    }
-}
-
-// Send Telegram notification function
-async function sendTelegramNotification(customerName, activationKey, orderId, total) {
-    try {
-        const db = await readDB();
-        const telegramConfig = db.telegramConfig;
-        
-        if (!telegramConfig || !telegramConfig.botToken || !telegramConfig.chatId) {
-            console.log('Telegram config not found, skipping notification');
-            return;
-        }
-
-        const message = `🎉 *THANH TOÁN THÀNH CÔNG*
-
-👤 *Khách hàng:* ${customerName}
-🆔 *Mã đơn hàng:* \`${orderId}\`
-💰 *Số tiền:* ${new Intl.NumberFormat('vi-VN').format(total)}₫
-🔑 *Key kích hoạt:* \`${activationKey}\`
-
-⏰ *Thời gian:* ${new Date().toLocaleString('vi-VN')}
-
-✅ Đơn hàng đã được xác nhận thanh toán thành công!`;
-
-        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
-        
-        const response = await fetch(telegramUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: telegramConfig.chatId,
-                text: message,
-                parse_mode: 'Markdown'
-            })
-        });
-
-        if (response.ok) {
-            console.log(`✅ Telegram notification sent for order ${orderId}`);
-        } else {
-            console.error('❌ Failed to send Telegram notification:', await response.text());
-        }
-    } catch (error) {
-        console.error('❌ Error sending Telegram notification:', error);
-    }
-}
+const transporter = nodemailer.createTransporter(emailConfig);
 
 // Send email function
 async function sendActivationKey(customerEmail, customerName, activationKey, orderId) {
@@ -220,12 +112,7 @@ async function sendActivationKey(customerEmail, customerName, activationKey, ord
         };
 
         // Create new transporter with updated config
-        const transporter = nodemailer.createTransport(emailConfig);
-
-        console.log('📧 Email config:', {
-            user: emailConfig.auth.user,
-            pass: emailConfig.auth.pass ? '***' + emailConfig.auth.pass.slice(-4) : 'NOT_SET'
-        });
+        const transporter = nodemailer.createTransporter(emailConfig);
 
         const mailOptions = {
             from: emailConfig.auth.user,
@@ -251,7 +138,7 @@ async function sendActivationKey(customerEmail, customerName, activationKey, ord
                         
                         <h3>📋 Hướng Dẫn Sử Dụng:</h3>
                         <ol style="line-height: 1.8;">
-                            <li>Truy cập: <a href="http://localhost:3000">http://localhost:3000</a></li>
+                            <li>Truy cập trang web của bạn</li>
                             <li>Nhập key kích hoạt ở trên</li>
                             <li>Tải xuống Shadowrocket + Config Gold + DNS</li>
                             <li>Làm theo hướng dẫn cài đặt</li>
@@ -382,7 +269,7 @@ app.post('/api/admin/generate-keys', async (req, res) => {
     try {
         const { adminKey, count = 1, prefix = 'LOCKET' } = req.body;
 
-        // Check admin key (more secure)
+        // Check admin key
         if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
                 success: false,
@@ -421,13 +308,12 @@ app.post('/api/admin/generate-keys', async (req, res) => {
     }
 });
 
-
 // API: Get All Keys (Admin)
 app.get('/api/admin/keys', async (req, res) => {
     try {
         const { adminKey } = req.query;
 
-        if (!(await isValidAdminKey(adminKey))) {
+        if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
                 success: false,
                 message: 'Admin key không hợp lệ'
@@ -479,7 +365,7 @@ app.post('/api/orders', async (req, res) => {
             items,
             paymentMethod,
             total,
-            status: 'pending', // pending, paid, completed, cancelled
+            status: 'pending',
             downloadToken,
             downloadLimit: items.reduce((sum, item) => sum + (item.downloads || 0), 0),
             downloadCount: 0,
@@ -490,21 +376,9 @@ app.post('/api/orders', async (req, res) => {
         db.orders.push(order);
         await writeDB(db);
 
-        // Send new order notification to Telegram
-        await sendNewOrderNotification(
-            customer.fullName,
-            orderId,
-            total,
-            paymentMethod
-        );
-
         // Generate payment URL based on payment method
         let paymentUrl = '';
-        if (paymentMethod === 'momo') {
-            paymentUrl = generateMoMoPaymentUrl(orderId, total);
-        } else if (paymentMethod === 'vnpay') {
-            paymentUrl = generateVNPayPaymentUrl(orderId, total);
-        } else if (paymentMethod === 'bank') {
+        if (paymentMethod === 'bank') {
             paymentUrl = `/payment/bank/${orderId}`;
         }
 
@@ -635,57 +509,6 @@ app.get('/api/download/:token', async (req, res) => {
     }
 });
 
-// API: Payment Callback (MoMo)
-app.post('/api/payment/momo/callback', async (req, res) => {
-    try {
-        const { orderId, resultCode } = req.body;
-
-        if (resultCode === 0) {
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === orderId);
-
-            if (order) {
-                order.status = 'paid';
-                order.paidAt = new Date().toISOString();
-                await writeDB(db);
-
-                // Send email with download link (implement later)
-                console.log('Order paid:', orderId);
-            }
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error in MoMo callback:', error);
-        res.status(500).json({ success: false });
-    }
-});
-
-// API: Payment Callback (VNPay)
-app.get('/api/payment/vnpay/callback', async (req, res) => {
-    try {
-        const { vnp_TxnRef, vnp_ResponseCode } = req.query;
-
-        if (vnp_ResponseCode === '00') {
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === vnp_TxnRef);
-
-            if (order) {
-                order.status = 'paid';
-                order.paidAt = new Date().toISOString();
-                await writeDB(db);
-
-                console.log('Order paid:', vnp_TxnRef);
-            }
-        }
-
-        res.redirect(`/success.html?orderId=${vnp_TxnRef}`);
-    } catch (error) {
-        console.error('Error in VNPay callback:', error);
-        res.redirect('/error.html');
-    }
-});
-
 // API: Manual Payment Confirmation (Bank Transfer)
 app.post('/api/payment/bank/confirm', async (req, res) => {
     try {
@@ -747,14 +570,6 @@ app.post('/api/payment/bank/confirm', async (req, res) => {
                 orderId
             );
             
-            // Send Telegram notification
-            await sendTelegramNotification(
-                order.customer.fullName,
-                newKey,
-                orderId,
-                order.total
-            );
-            
             console.log(`Order ${orderId} confirmed and new key ${newKey} sent to ${order.customer.email}`);
         } catch (emailError) {
             console.error('Error sending email:', emailError);
@@ -773,396 +588,6 @@ app.post('/api/payment/bank/confirm', async (req, res) => {
         });
     }
 });
-
-// API: Get Telegram Config (Admin)
-app.get('/api/admin/telegram-config', async (req, res) => {
-    try {
-        const { adminKey } = req.query;
-
-        if (!isValidAdminKey(adminKey)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin key không hợp lệ'
-            });
-        }
-
-        const db = await readDB();
-        const config = db.telegramConfig || {
-            botToken: '',
-            chatId: ''
-        };
-
-        res.json({
-            success: true,
-            config: config
-        });
-    } catch (error) {
-        console.error('Error getting telegram config:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server'
-        });
-    }
-});
-
-// API: Update Telegram Config (Admin)
-app.post('/api/admin/telegram-config', async (req, res) => {
-    try {
-        const { adminKey, botToken, chatId } = req.body;
-
-        if (!isValidAdminKey(adminKey)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin key không hợp lệ'
-            });
-        }
-
-        const db = await readDB();
-        db.telegramConfig = {
-            botToken: botToken || '',
-            chatId: chatId || ''
-        };
-
-        await writeDB(db);
-
-        // Clear webhook and use polling instead
-        if (botToken) {
-            try {
-                const deleteWebhookUrl = `https://api.telegram.org/bot${botToken}/deleteWebhook`;
-                
-                await fetch(deleteWebhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        drop_pending_updates: true
-                    })
-                });
-                
-                console.log('✅ Telegram webhook cleared, using polling');
-                
-                // Start polling for updates
-                startTelegramPolling(botToken);
-            } catch (webhookError) {
-                console.error('❌ Error clearing Telegram webhook:', webhookError);
-            }
-        }
-
-        res.json({
-            success: true,
-            message: 'Cấu hình Telegram đã được lưu thành công'
-        });
-    } catch (error) {
-        console.error('Error updating telegram config:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server'
-        });
-    }
-});
-
-// API: Handle Telegram Callback
-app.post('/api/telegram/callback', async (req, res) => {
-    try {
-        const { callback_query } = req.body;
-        
-        if (!callback_query) {
-            return res.status(400).json({ success: false });
-        }
-
-        const { data, message, from } = callback_query;
-        const chatId = message.chat.id;
-        const messageId = message.message_id;
-
-        // Check if it's a confirm or reject action
-        if (data.startsWith('confirm_')) {
-            const orderId = data.replace('confirm_', '');
-            
-            // Confirm payment
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === orderId);
-            
-            if (!order) {
-                await sendTelegramMessage(chatId, `❌ Không tìm thấy đơn hàng ${orderId}`, messageId);
-                return res.json({ success: true });
-            }
-
-            if (order.status === 'paid') {
-                await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã được xác nhận rồi!`, messageId);
-                return res.json({ success: true });
-            }
-
-            // Mark as paid
-            order.status = 'paid';
-            order.paidAt = new Date().toISOString();
-            await writeDB(db);
-
-            // Send activation key
-            try {
-                const availableKey = db.keys.find(k => !k.used);
-                
-                if (availableKey) {
-                    // Mark key as used
-                    availableKey.used = true;
-                    availableKey.usedAt = new Date().toISOString();
-                    availableKey.usedBy = order.customer.email;
-                    availableKey.deviceFingerprint = 'telegram-confirmation';
-                    
-                    await writeDB(db);
-                    
-                    // Send email
-                    await sendActivationKey(
-                        order.customer.email,
-                        order.customer.fullName,
-                        availableKey.key,
-                        orderId
-                    );
-                    
-                    // Send success notification
-                    await sendTelegramMessage(chatId, 
-                        `✅ *Đã xác nhận thanh toán thành công!*\n\n` +
-                        `🆔 Đơn hàng: \`${orderId}\`\n` +
-                        `👤 Khách hàng: ${order.customer.fullName}\n` +
-                        `🔑 Key kích hoạt: \`${availableKey.key}\`\n` +
-                        `📧 Email đã gửi: ${order.customer.email}`, 
-                        messageId
-                    );
-
-                    // Answer callback with success
-                    await answerCallbackQuery(callbackId, "✅ Đã xác nhận thanh toán thành công!", true);
-                    
-                    console.log(`Order ${orderId} confirmed via Telegram and key ${availableKey.key} sent to ${order.customer.email}`);
-                } else {
-                    await sendTelegramMessage(chatId, `❌ Không còn key kích hoạt nào!`, messageId);
-                }
-            } catch (emailError) {
-                console.error('Error sending email:', emailError);
-                await sendTelegramMessage(chatId, `⚠️ Đã xác nhận nhưng lỗi gửi email. Key: \`${availableKey.key}\``, messageId);
-            }
-
-        } else if (data.startsWith('reject_')) {
-            const orderId = data.replace('reject_', '');
-            
-            // Reject order
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === orderId);
-            
-            if (order) {
-                order.status = 'cancelled';
-                order.cancelledAt = new Date().toISOString();
-                await writeDB(db);
-                
-                await sendTelegramMessage(chatId, `❌ Đã từ chối đơn hàng ${orderId}`, messageId);
-                
-                // Answer callback with rejection
-                await answerCallbackQuery(callbackId, "❌ Đã từ chối đơn hàng", true);
-            }
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error handling Telegram callback:', error);
-        res.status(500).json({ success: false });
-    }
-});
-
-// Telegram polling function
-let telegramPollingInterval = null;
-
-function startTelegramPolling(botToken) {
-    // Clear existing polling
-    if (telegramPollingInterval) {
-        clearInterval(telegramPollingInterval);
-    }
-    
-    let lastUpdateId = 0;
-    
-    telegramPollingInterval = setInterval(async () => {
-        try {
-            const response = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`);
-            const data = await response.json();
-            
-            if (data.ok && data.result.length > 0) {
-                for (const update of data.result) {
-                    lastUpdateId = update.update_id;
-                    
-                    if (update.callback_query) {
-                        // Handle callback query
-                        await handleTelegramCallback(update.callback_query);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error polling Telegram updates:', error);
-        }
-    }, 1000); // Poll every 1 second
-    
-    console.log('✅ Telegram polling started');
-}
-
-// Handle Telegram callback
-async function handleTelegramCallback(callback_query) {
-    try {
-        const { data, message, from, id: callbackId } = callback_query;
-        const chatId = message.chat.id;
-        const messageId = message.message_id;
-
-        // Answer callback query to stop loading
-        await answerCallbackQuery(callbackId, "Đang xử lý...");
-
-        // Check if it's a confirm or reject action
-        if (data.startsWith('confirm_')) {
-            const orderId = data.replace('confirm_', '');
-            
-            // Confirm payment
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === orderId);
-            
-            if (!order) {
-                await sendTelegramMessage(chatId, `❌ Không tìm thấy đơn hàng ${orderId}`, messageId);
-                return;
-            }
-
-            if (order.status === 'paid') {
-                await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã được xác nhận rồi!`, messageId);
-                return;
-            }
-
-            // Mark as paid
-            order.status = 'paid';
-            order.paidAt = new Date().toISOString();
-            await writeDB(db);
-
-            // Generate new activation key
-            try {
-                const newKey = generateActivationKey();
-                
-                // Create new key record
-                const keyRecord = {
-                    key: newKey,
-                    used: true,
-                    createdAt: new Date().toISOString(),
-                    usedAt: new Date().toISOString(),
-                    usedBy: order.customer.email,
-                    deviceFingerprint: 'telegram-confirmation',
-                    orderId: orderId
-                };
-                
-                db.keys.push(keyRecord);
-                await writeDB(db);
-                
-                // Send email
-                await sendActivationKey(
-                    order.customer.email,
-                    order.customer.fullName,
-                    newKey,
-                    orderId
-                );
-                
-                // Send success notification
-                await sendTelegramMessage(chatId, 
-                    `✅ *Đã xác nhận thanh toán thành công!*\n\n` +
-                    `🆔 Đơn hàng: \`${orderId}\`\n` +
-                    `👤 Khách hàng: ${order.customer.fullName}\n` +
-                    `🔑 Key kích hoạt: \`${newKey}\`\n` +
-                    `📧 Email đã gửi: ${order.customer.email}`, 
-                    messageId
-                );
-
-                // Answer callback with success
-                await answerCallbackQuery(callbackId, "✅ Đã xác nhận thanh toán thành công!", true);
-                
-                console.log(`Order ${orderId} confirmed via Telegram and new key ${newKey} sent to ${order.customer.email}`);
-            } catch (emailError) {
-                console.error('Error sending email:', emailError);
-                await sendTelegramMessage(chatId, `⚠️ Đã xác nhận nhưng lỗi gửi email. Key: \`${newKey}\``, messageId);
-            }
-
-        } else if (data.startsWith('reject_')) {
-            const orderId = data.replace('reject_', '');
-            
-            // Reject order
-            const db = await readDB();
-            const order = db.orders.find(o => o.orderId === orderId);
-            
-            if (order) {
-                order.status = 'cancelled';
-                order.cancelledAt = new Date().toISOString();
-                await writeDB(db);
-                
-                await sendTelegramMessage(chatId, `❌ Đã từ chối đơn hàng ${orderId}`, messageId);
-                
-                // Answer callback with rejection
-                await answerCallbackQuery(callbackId, "❌ Đã từ chối đơn hàng", true);
-            }
-        }
-    } catch (error) {
-        console.error('Error handling Telegram callback:', error);
-    }
-}
-
-// Helper function to answer callback query
-async function answerCallbackQuery(callbackId, text = null, showAlert = false) {
-    try {
-        const db = await readDB();
-        const telegramConfig = db.telegramConfig;
-        
-        if (!telegramConfig || !telegramConfig.botToken) {
-            return;
-        }
-
-        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/answerCallbackQuery`;
-        
-        await fetch(telegramUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                callback_query_id: callbackId,
-                text: text,
-                show_alert: showAlert
-            })
-        });
-    } catch (error) {
-        console.error('Error answering callback query:', error);
-    }
-}
-
-// Helper function to send Telegram message
-async function sendTelegramMessage(chatId, text, replyToMessageId = null) {
-    try {
-        const db = await readDB();
-        const telegramConfig = db.telegramConfig;
-        
-        if (!telegramConfig || !telegramConfig.botToken) {
-            return;
-        }
-
-        const telegramUrl = `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`;
-        
-        const payload = {
-            chat_id: chatId,
-            text: text,
-            parse_mode: 'Markdown'
-        };
-
-        if (replyToMessageId) {
-            payload.reply_to_message_id = replyToMessageId;
-        }
-        
-        await fetch(telegramUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-        });
-    } catch (error) {
-        console.error('Error sending Telegram message:', error);
-    }
-}
 
 // API: Get Payment Config (Public)
 app.get('/api/payment-config', async (req, res) => {
@@ -1266,52 +691,12 @@ app.post('/api/admin/payment-config', async (req, res) => {
     }
 });
 
-// API: Manual Payment Confirmation (for Bank Transfer)
-app.post('/api/orders/:orderId/confirm', async (req, res) => {
-    try {
-        const { orderId } = req.params;
-        const { adminKey } = req.body;
-
-        if (!(await isValidAdminKey(adminKey))) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin key không hợp lệ'
-            });
-        }
-
-        const db = await readDB();
-        const order = db.orders.find(o => o.orderId === orderId);
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Không tìm thấy đơn hàng'
-            });
-        }
-
-        order.status = 'paid';
-        order.paidAt = new Date().toISOString();
-        await writeDB(db);
-
-        res.json({
-            success: true,
-            message: 'Đơn hàng đã được xác nhận'
-        });
-    } catch (error) {
-        console.error('Error confirming order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server'
-        });
-    }
-});
-
 // API: Get All Orders (Admin)
 app.get('/api/admin/orders', async (req, res) => {
     try {
         const { adminKey } = req.query;
 
-        if (!(await isValidAdminKey(adminKey))) {
+        if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
                 success: false,
                 message: 'Admin key không hợp lệ'
@@ -1341,18 +726,6 @@ app.get('/api/admin/orders', async (req, res) => {
     }
 });
 
-// Generate MoMo Payment URL (Demo)
-function generateMoMoPaymentUrl(orderId, amount) {
-    // This is a demo URL. Implement real MoMo API integration
-    return `https://test-payment.momo.vn/gw_payment/payment/qr?orderId=${orderId}&amount=${amount}`;
-}
-
-// Generate VNPay Payment URL (Demo)
-function generateVNPayPaymentUrl(orderId, amount) {
-    // This is a demo URL. Implement real VNPay API integration
-    return `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?orderId=${orderId}&amount=${amount * 100}`;
-}
-
 // Start server
 initDatabase().then(() => {
     app.listen(PORT, () => {
@@ -1370,4 +743,3 @@ initDatabase().then(() => {
         `);
     });
 });
-
