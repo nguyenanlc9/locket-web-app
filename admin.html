@@ -567,6 +567,11 @@
                         </div>
                         
                         <div class="form-group">
+                            <label>Giá sản phẩm (VNĐ)</label>
+                            <input type="number" id="productPrice" placeholder="30000" required>
+                        </div>
+                        
+                        <div class="form-group">
                             <label>Email gửi thư</label>
                             <input type="email" id="emailUser" placeholder="your-email@gmail.com" required>
                         </div>
@@ -1025,6 +1030,7 @@
                     document.getElementById('bankName').value = config.bankName;
                     document.getElementById('accountNumber').value = config.accountNumber;
                     document.getElementById('accountHolder').value = config.accountHolder;
+                    document.getElementById('productPrice').value = config.productPrice || 30000;
                     document.getElementById('emailUser').value = config.emailUser;
                     document.getElementById('emailPass').value = config.emailPass;
                 }
@@ -1042,6 +1048,7 @@
                 bankName: document.getElementById('bankName').value,
                 accountNumber: document.getElementById('accountNumber').value,
                 accountHolder: document.getElementById('accountHolder').value,
+                productPrice: parseInt(document.getElementById('productPrice').value),
                 emailUser: document.getElementById('emailUser').value,
                 emailPass: document.getElementById('emailPass').value
             };

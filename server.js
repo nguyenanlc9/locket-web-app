@@ -624,7 +624,8 @@ app.get('/api/payment-config', async (req, res) => {
             config: {
                 bankName: config.bankName,
                 accountNumber: config.accountNumber,
-                accountHolder: config.accountHolder
+                accountHolder: config.accountHolder,
+                productPrice: config.productPrice || 30000
             }
         });
     } catch (error) {
@@ -653,6 +654,7 @@ app.get('/api/admin/payment-config', async (req, res) => {
             bankName: 'VietinBank',
             accountNumber: '113366668888',
             accountHolder: 'NGUYEN VAN A',
+            productPrice: 30000,
             emailUser: 'your-email@gmail.com',
             emailPass: 'your-app-password'
         };
@@ -671,10 +673,74 @@ app.get('/api/admin/payment-config', async (req, res) => {
     }
 });
 
+// API: Get Telegram Config (Admin)
+app.get('/api/admin/telegram-config', async (req, res) => {
+    try {
+        const { adminKey } = req.query;
+
+        if (!isValidAdminKey(adminKey)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin key không hợp lệ'
+            });
+        }
+
+        const db = await readDB();
+        const config = db.telegramConfig || {
+            botToken: '',
+            chatId: ''
+        };
+
+        res.json({
+            success: true,
+            config: config
+        });
+    } catch (error) {
+        console.error('Error getting telegram config:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server'
+        });
+    }
+});
+
+// API: Update Telegram Config (Admin)
+app.post('/api/admin/telegram-config', async (req, res) => {
+    try {
+        const { adminKey, botToken, chatId } = req.body;
+
+        if (!isValidAdminKey(adminKey)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin key không hợp lệ'
+            });
+        }
+
+        const db = await readDB();
+        db.telegramConfig = {
+            botToken: botToken || '',
+            chatId: chatId || ''
+        };
+
+        await writeDB(db);
+
+        res.json({
+            success: true,
+            message: 'Cấu hình Telegram đã được lưu thành công'
+        });
+    } catch (error) {
+        console.error('Error updating telegram config:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server'
+        });
+    }
+});
+
 // API: Update Payment Config (Admin)
 app.post('/api/admin/payment-config', async (req, res) => {
     try {
-        const { adminKey, bankName, accountNumber, accountHolder, emailUser, emailPass } = req.body;
+        const { adminKey, bankName, accountNumber, accountHolder, productPrice, emailUser, emailPass } = req.body;
 
         if (!isValidAdminKey(adminKey)) {
             return res.status(403).json({
@@ -688,6 +754,7 @@ app.post('/api/admin/payment-config', async (req, res) => {
             bankName: bankName || 'VietinBank',
             accountNumber: accountNumber || '113366668888',
             accountHolder: accountHolder || 'NGUYEN VAN A',
+            productPrice: productPrice || 30000,
             emailUser: emailUser || 'your-email@gmail.com',
             emailPass: emailPass || 'your-app-password'
         };

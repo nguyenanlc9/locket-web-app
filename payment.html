@@ -397,11 +397,11 @@
                 items: [{
                     id: 'locket-gold',
                     name: 'Locket Gold Key',
-                    price: 30000,
+                    price: window.productPrice || 30000,
                     downloads: 1
                 }],
                 paymentMethod: selectedPayment,
-                total: 30000,
+                total: window.productPrice || 30000,
                 timestamp: new Date().toISOString()
             };
 
@@ -423,7 +423,7 @@
                 if (result.success) {
                     if (selectedPayment === 'vietqr') {
                         // Redirect to VietQR page
-                        window.location.href = `/vietqr?orderId=${result.orderId}&amount=30000&customer=${encodeURIComponent(customer.fullName)}`;
+                        window.location.href = `/vietqr?orderId=${result.orderId}&amount=${window.productPrice || 30000}&customer=${encodeURIComponent(customer.fullName)}`;
                     } else {
                         showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
                         setTimeout(() => {
@@ -446,8 +446,34 @@
             window.location.href = '/';
         }
 
+        // Load payment config
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.productPrice = result.config.productPrice || 30000;
+                    updatePriceDisplay();
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+                window.productPrice = 30000;
+                updatePriceDisplay();
+            }
+        }
+
+        // Update price display
+        function updatePriceDisplay() {
+            const priceElements = document.querySelectorAll('.price');
+            priceElements.forEach(el => {
+                el.textContent = new Intl.NumberFormat('vi-VN').format(window.productPrice) + '₫';
+            });
+        }
+
         // Initialize
         window.addEventListener('load', () => {
+            loadPaymentConfig();
             getOrderData();
         });
     </script>
