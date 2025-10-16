@@ -25,7 +25,14 @@ jobs:
       - name: Copy files to C:\web
         shell: cmd
         run: |
-          xcopy /E /I /Y "%GITHUB_WORKSPACE%\*" "C:\web\"
+          if not exist "C:\web" mkdir "C:\web"
+          copy "%GITHUB_WORKSPACE%\server.js" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\package.json" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\*.html" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\*.mobileconfig" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\*.md" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\*.bat" "C:\web\"
+          copy "%GITHUB_WORKSPACE%\*.sh" "C:\web\"
           if exist "C:\web\.env" del "C:\web\.env"
 
       - name: Install production dependencies
