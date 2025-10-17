@@ -73,6 +73,69 @@
             margin-top: 15px;
         }
 
+        /* Payment Timer Styles */
+        .payment-timer {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .timer-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .timer-icon {
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        .timer-text {
+            text-align: left;
+        }
+
+        .timer-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .countdown {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-warning {
+            font-size: 12px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .timer-expired {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
         .payment-methods {
             margin-bottom: 30px;
         }
@@ -270,6 +333,21 @@
             <!-- Order Summary -->
             <div class="order-summary">
                 <h3>📦 Tóm Tắt Đơn Hàng</h3>
+                
+                <!-- Payment Timer -->
+                <div id="paymentTimer" class="payment-timer" style="display: none;">
+                    <div class="timer-content">
+                        <div class="timer-icon">⏰</div>
+                        <div class="timer-text">
+                            <div class="timer-label">Thời gian thanh toán còn lại:</div>
+                            <div id="countdown" class="countdown">15:00</div>
+                        </div>
+                    </div>
+                    <div class="timer-warning">
+                        ⚠️ Vui lòng hoàn thành thanh toán trong thời gian trên
+                    </div>
+                </div>
+                
                 <div class="summary-row">
                     <span>Locket Gold Key</span>
                     <span class="price">30,000₫</span>
@@ -350,6 +428,11 @@
             if (data) {
                 try {
                     orderData = JSON.parse(decodeURIComponent(data));
+                    
+                    // Start payment timer if orderId exists
+                    if (orderData.orderId) {
+                        startPaymentTimer(orderData.orderId);
+                    }
                 } catch (e) {
                     console.error('Error parsing order data:', e);
                 }
@@ -469,6 +552,77 @@
             priceElements.forEach(el => {
                 el.textContent = new Intl.NumberFormat('vi-VN').format(window.productPrice) + '₫';
             });
+        }
+
+        // Payment Timer Functions
+        let timerInterval = null;
+        let currentOrderId = null;
+
+        function startPaymentTimer(orderId) {
+            currentOrderId = orderId;
+            const timerElement = document.getElementById('paymentTimer');
+            const countdownElement = document.getElementById('countdown');
+            
+            timerElement.style.display = 'block';
+            
+            // Start countdown
+            timerInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/orders/${orderId}/timeout`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const { timeRemaining, isExpired, status } = result.timeout;
+                        
+                        if (isExpired || status !== 'pending') {
+                            stopPaymentTimer();
+                            showTimerExpired();
+                            return;
+                        }
+                        
+                        // Update countdown display
+                        const minutes = Math.floor(timeRemaining / 60);
+                        const seconds = timeRemaining % 60;
+                        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        
+                        // Change color when less than 5 minutes
+                        if (timeRemaining < 300) {
+                            timerElement.classList.add('timer-expired');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking timer:', error);
+                }
+            }, 1000);
+        }
+
+        function stopPaymentTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function showTimerExpired() {
+            const timerElement = document.getElementById('paymentTimer');
+            const countdownElement = document.getElementById('countdown');
+            
+            timerElement.classList.add('timer-expired');
+            countdownElement.textContent = '00:00';
+            
+            // Show expired message
+            const warningElement = timerElement.querySelector('.timer-warning');
+            warningElement.textContent = '❌ Đơn hàng đã hết hạn thanh toán!';
+            warningElement.style.color = '#fff';
+            warningElement.style.fontWeight = 'bold';
+            
+            // Disable payment button
+            const paymentBtn = document.getElementById('paymentBtn');
+            if (paymentBtn) {
+                paymentBtn.disabled = true;
+                paymentBtn.textContent = 'Đơn hàng đã hết hạn';
+                paymentBtn.style.background = '#ccc';
+            }
         }
 
         // Initialize

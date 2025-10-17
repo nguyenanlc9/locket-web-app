@@ -49,13 +49,21 @@ app.get('/vietqr', (req, res) => {
 });
 
 // Database (JSON file - for simple implementation)
-const DB_FILE = path.join(__dirname, 'database.json');
+// Use separate database folder outside project to avoid git conflicts
+const DB_DIR = process.env.LOCKET_DB_DIR || 'C:\\LocketDatabase';
+const DB_FILE = path.join(DB_DIR, 'database.json');
 
 // Initialize database
 async function initDatabase() {
     try {
+        // Create database directory if it doesn't exist
+        await fs.mkdir(DB_DIR, { recursive: true });
+        console.log(`📁 Database directory: ${DB_DIR}`);
+        
         await fs.access(DB_FILE);
+        console.log(`📄 Database file exists: ${DB_FILE}`);
     } catch {
+        console.log(`📄 Creating new database: ${DB_FILE}`);
         await fs.writeFile(DB_FILE, JSON.stringify({
             orders: [],
             downloads: [],
@@ -193,6 +201,7 @@ async function sendNewOrderNotification(customerName, orderId, total, paymentMet
 🌐 *IP Address:* \`${clientIP || 'Unknown'}\`
 
 ⏰ *Thời gian:* ${new Date().toLocaleString('vi-VN')}
+⏳ *Hết hạn thanh toán:* ${new Date(Date.now() + 15 * 60 * 1000).toLocaleString('vi-VN')} (15 phút)
 
 🔔 Nhấn nút bên dưới để xác nhận thanh toán!`;
 
@@ -499,6 +508,9 @@ app.post('/api/orders', async (req, res) => {
         const downloadToken = generateDownloadToken();
 
         // Create order
+        const now = new Date();
+        const paymentTimeout = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes from now
+        
         const order = {
             orderId,
             customer,
@@ -509,8 +521,9 @@ app.post('/api/orders', async (req, res) => {
             downloadToken,
             downloadLimit: items.reduce((sum, item) => sum + (item.downloads || 0), 0),
             downloadCount: 0,
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+            createdAt: now.toISOString(),
+            paymentTimeout: paymentTimeout.toISOString(), // 15 minutes payment timeout
+            expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         };
 
         db.orders.push(order);
@@ -563,6 +576,19 @@ app.get('/api/orders/:orderId', async (req, res) => {
             });
         }
 
+        // Check if payment has timed out
+        const now = new Date();
+        const paymentTimeout = new Date(order.paymentTimeout);
+        const isPaymentExpired = now > paymentTimeout && order.status === 'pending';
+        
+        if (isPaymentExpired) {
+            // Auto-cancel expired orders
+            order.status = 'cancelled';
+            order.cancelledAt = now.toISOString();
+            order.cancelledReason = 'Payment timeout';
+            await writeDB(db);
+        }
+
         res.json({
             success: true,
             order: {
@@ -574,7 +600,10 @@ app.get('/api/orders/:orderId', async (req, res) => {
                 downloadLimit: order.downloadLimit,
                 downloadCount: order.downloadCount,
                 createdAt: order.createdAt,
-                expiresAt: order.expiresAt
+                paymentTimeout: order.paymentTimeout,
+                expiresAt: order.expiresAt,
+                isPaymentExpired: isPaymentExpired,
+                timeRemaining: isPaymentExpired ? 0 : Math.max(0, Math.floor((paymentTimeout - now) / 1000))
             }
         });
     } catch (error) {
@@ -740,6 +769,43 @@ app.post('/api/payment/bank/confirm', async (req, res) => {
     }
 });
 
+// API: Get Order Timeout Info
+app.get('/api/orders/:orderId/timeout', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const db = await readDB();
+        const order = db.orders.find(o => o.orderId === orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        const now = new Date();
+        const paymentTimeout = new Date(order.paymentTimeout);
+        const isPaymentExpired = now > paymentTimeout && order.status === 'pending';
+        const timeRemaining = isPaymentExpired ? 0 : Math.max(0, Math.floor((paymentTimeout - now) / 1000));
+
+        res.json({
+            success: true,
+            timeout: {
+                paymentTimeout: order.paymentTimeout,
+                timeRemaining: timeRemaining,
+                isExpired: isPaymentExpired,
+                status: order.status
+            }
+        });
+    } catch (error) {
+        console.error('Error getting timeout info:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server'
+        });
+    }
+});
+
 // API: Get Payment Config (Public)
 app.get('/api/payment-config', async (req, res) => {
     try {
@@ -887,7 +953,7 @@ Bạn sẽ nhận được thông báo khi có đơn hàng mới.`;
                         parse_mode: 'Markdown'
                     })
                 });
-
+                
                 if (response.ok) {
                     console.log('✅ Test message sent to Telegram successfully');
                 } else {
@@ -1211,7 +1277,7 @@ app.post('/api/admin/confirm-order', async (req, res) => {
         
         if (!order) {
             return res.status(404).json({
-                success: false,
+            success: false,
                 message: 'Không tìm thấy đơn hàng'
             });
         }
@@ -1269,12 +1335,12 @@ app.post('/api/admin/confirm-order', async (req, res) => {
             });
         } catch (emailError) {
             console.error('Error sending email:', emailError);
-            res.json({
-                success: true,
+        res.json({
+            success: true,
                 message: 'Đã xác nhận đơn hàng nhưng lỗi gửi email',
                 key: newKey,
                 emailError: emailError.message
-            });
+        });
         }
     } catch (error) {
         console.error('Error confirming order:', error);
@@ -1333,7 +1399,14 @@ function startTelegramPolling(botToken) {
     
     telegramPollingInterval = setInterval(async () => {
         try {
-            const response = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            const response = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
             const data = await response.json();
             
             if (data.ok && data.result.length > 0) {
@@ -1347,9 +1420,13 @@ function startTelegramPolling(botToken) {
                 }
             }
         } catch (error) {
-            console.error('Error polling Telegram updates:', error);
+            if (error.name === 'AbortError') {
+                console.log('⚠️ Telegram polling timeout, retrying...');
+            } else {
+                console.error('Error polling Telegram updates:', error.message);
+            }
         }
-    }, 1000); // Poll every 1 second
+    }, 2000); // Poll every 2 seconds
     
     console.log('✅ Telegram polling started');
 }
@@ -1371,17 +1448,25 @@ async function handleTelegramCallback(callback_query) {
             const orderId = data.replace('confirm_', '');
             console.log(`✅ Processing confirm for order: ${orderId}`);
             
-            // Confirm payment
+            // Get current order status first
             const db = await readDB();
             const order = db.orders.find(o => o.orderId === orderId);
             
             if (!order) {
                 await sendTelegramMessage(chatId, `❌ Không tìm thấy đơn hàng ${orderId}`, messageId);
+                await answerCallbackQuery(callbackId, "❌ Không tìm thấy đơn hàng", true);
                 return;
             }
 
             if (order.status === 'paid') {
                 await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã được xác nhận rồi!`, messageId);
+                await answerCallbackQuery(callbackId, "⚠️ Đơn hàng đã được xác nhận", true);
+                return;
+            }
+
+            if (order.status === 'cancelled') {
+                await sendTelegramMessage(chatId, `⚠️ Đơn hàng ${orderId} đã bị hủy!`, messageId);
+                await answerCallbackQuery(callbackId, "⚠️ Đơn hàng đã bị hủy", true);
                 return;
             }
 
@@ -1461,6 +1546,35 @@ async function handleTelegramCallback(callback_query) {
     }
 }
 
+// Auto-cancel expired orders function
+async function cancelExpiredOrders() {
+    try {
+        const db = await readDB();
+        const now = new Date();
+        let cancelledCount = 0;
+        
+        for (const order of db.orders) {
+            if (order.status === 'pending' && order.paymentTimeout) {
+                const paymentTimeout = new Date(order.paymentTimeout);
+                if (now > paymentTimeout) {
+                    order.status = 'cancelled';
+                    order.cancelledAt = now.toISOString();
+                    order.cancelledReason = 'Payment timeout (auto-cancelled)';
+                    cancelledCount++;
+                    console.log(`⏰ Auto-cancelled expired order: ${order.orderId}`);
+                }
+            }
+        }
+        
+        if (cancelledCount > 0) {
+            await writeDB(db);
+            console.log(`🔄 Auto-cancelled ${cancelledCount} expired orders`);
+        }
+    } catch (error) {
+        console.error('Error cancelling expired orders:', error);
+    }
+}
+
 // Start server
 initDatabase().then(() => {
     app.listen(PORT, () => {
@@ -1476,5 +1590,9 @@ initDatabase().then(() => {
 ║     🎁 Demo Keys: DEMO-2024-GOLD, TEST-KEY-12345          ║
 ╚════════════════════════════════════════════════════════════╝
         `);
+        
+        // Start auto-cancel job (run every 5 minutes)
+        setInterval(cancelExpiredOrders, 5 * 60 * 1000);
+        console.log('⏰ Auto-cancel job started (every 5 minutes)');
     });
 });

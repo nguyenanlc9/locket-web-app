@@ -56,10 +56,6 @@ jobs:
           taskkill /F /IM node.exe 2>nul || echo "No Node.js processes running"
           timeout /t 2 /nobreak >nul
           cd /d "%USERPROFILE%\web"
-          if exist "data\database.json" (
-            echo Database exists, starting server...
-            start /B node server.js
-          ) else (
-            echo Database not found, initializing...
-            node server.js
-          )
+          echo Database is now external at C:\LocketDatabase\
+          echo Starting server with external database...
+          start /B node server.js
