@@ -303,7 +303,11 @@ app.post('/api/orders', (req, res) => {
         // Save database
         saveDatabase();
         
-        res.json({ success: true, order: order });
+        res.json({ 
+            success: true, 
+            order: order,
+            orderId: order.id || order.orderId || 'LOCKET' + Date.now()
+        });
     } catch (error) {
         console.error('Error creating order:', error);
         res.status(500).json({ error: 'Failed to create order' });

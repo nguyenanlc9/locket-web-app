@@ -416,9 +416,14 @@
         // Get data from URL params
         function getDataFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            orderId = urlParams.get('orderId') || '';
+            orderId = urlParams.get('orderId') || 'LOCKET' + Date.now();
             amount = parseInt(urlParams.get('amount')) || 30000;
             const customer = urlParams.get('customer') || '';
+            
+            // Ensure orderId is not undefined
+            if (!orderId || orderId === 'undefined') {
+                orderId = 'LOCKET' + Date.now();
+            }
             
             content = `LOCKET ${orderId}`;
             

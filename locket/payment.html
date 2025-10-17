@@ -505,8 +505,13 @@
 
                 if (result.success) {
                     if (selectedPayment === 'vietqr') {
+                        // Ensure orderId is valid
+                        const orderId = result.orderId || result.order?.id || 'LOCKET' + Date.now();
+                        const amount = window.productPrice || 30000;
+                        const customerName = customer.fullName || 'Khách hàng';
+                        
                         // Redirect to VietQR page
-                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=${window.productPrice || 30000}&customer=${encodeURIComponent(customer.fullName)}`;
+                        window.location.href = `vietqr.html?orderId=${orderId}&amount=${amount}&customer=${encodeURIComponent(customerName)}`;
                     } else {
                         showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
                         setTimeout(() => {
