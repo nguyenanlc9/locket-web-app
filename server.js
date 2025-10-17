@@ -9,13 +9,17 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('.'));
 
+// Database path
+const DB_PATH = 'C:\\LocketDatabase\\database.json';
+
 // Load database
 let database = {};
 try {
-    const data = fs.readFileSync('database.json', 'utf8');
+    const data = fs.readFileSync(DB_PATH, 'utf8');
     database = JSON.parse(data);
+    console.log('Database loaded from:', DB_PATH);
 } catch (error) {
-    console.log('Creating new database...');
+    console.log('Creating new database at:', DB_PATH);
     database = {
         categories: [],
         products: [],
@@ -38,8 +42,8 @@ try {
 // Save database
 function saveDatabase() {
     try {
-        fs.writeFileSync('database.json', JSON.stringify(database, null, 2));
-        console.log('Database saved successfully');
+        fs.writeFileSync(DB_PATH, JSON.stringify(database, null, 2));
+        console.log('Database saved successfully to:', DB_PATH);
     } catch (error) {
         console.error('Error saving database:', error);
     }
