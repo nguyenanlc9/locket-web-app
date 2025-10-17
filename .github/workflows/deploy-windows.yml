@@ -25,7 +25,7 @@ jobs:
       - name: Copy files to deployment folder
         shell: cmd
         run: |
-          if not exist "%USERPROFILE%\web" mkdir "%USERPROFILE%\web"
+          mkdir "%USERPROFILE%\web" 2>nul || echo "Directory already exists"
           copy "%GITHUB_WORKSPACE%\server.js" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\package.json" "%USERPROFILE%\web\"
           if exist "%GITHUB_WORKSPACE%\package-lock.json" copy "%GITHUB_WORKSPACE%\package-lock.json" "%USERPROFILE%\web\"
@@ -33,7 +33,7 @@ jobs:
           copy "%GITHUB_WORKSPACE%\*.mobileconfig" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.md" "%USERPROFILE%\web\"
           copy "%GITHUB_WORKSPACE%\*.bat" "%USERPROFILE%\web\"
-          copy "%GITHUB_WORKSPACE%\*.sh" "%USERPROFILE%\web\"
+          if exist "%GITHUB_WORKSPACE%\*.sh" copy "%GITHUB_WORKSPACE%\*.sh" "%USERPROFILE%\web\"
           if exist "%GITHUB_WORKSPACE%\data" xcopy /E /I /Y "%GITHUB_WORKSPACE%\data" "%USERPROFILE%\web\data\"
           if exist "%USERPROFILE%\web\.env" del "%USERPROFILE%\web\.env"
 
