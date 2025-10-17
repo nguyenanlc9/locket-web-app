@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thanh Toán - MMO Services Store</title>
+    <title>Thanh Toán - Locket Gold</title>
     <style>
         * {
             margin: 0;
@@ -13,21 +13,18 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #533483 75%, #e94560 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            color: #fff;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
+            background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header {
@@ -47,15 +44,14 @@
         }
 
         .order-summary {
-            background: rgba(255, 255, 255, 0.05);
+            background: #f5f7fa;
             padding: 25px;
             border-radius: 15px;
             margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .order-summary h3 {
-            color: #fff;
+            color: #333;
             margin-bottom: 15px;
         }
 
@@ -64,57 +60,80 @@
             justify-content: space-between;
             margin: 10px 0;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #eee;
         }
 
         .summary-row.total {
             font-weight: bold;
             font-size: 18px;
-            color: #4ecdc4;
+            color: #667eea;
             border-bottom: none;
-            border-top: 2px solid #4ecdc4;
+            border-top: 2px solid #667eea;
             padding-top: 15px;
             margin-top: 15px;
         }
 
-        .customer-info {
-            margin-bottom: 30px;
-        }
-
-        .customer-info h3 {
-            color: #fff;
+        /* Payment Timer Styles */
+        .payment-timer {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
             margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        .timer-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
         }
 
-        .form-group label {
-            display: block;
-            color: #fff;
-            font-weight: 600;
-            margin-bottom: 8px;
+        .timer-icon {
+            font-size: 24px;
+            animation: pulse 2s infinite;
         }
 
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
+        .timer-text {
+            text-align: left;
+        }
+
+        .timer-label {
             font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            transition: border 0.3s ease;
+            opacity: 0.9;
+            margin-bottom: 5px;
         }
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #4ecdc4;
+        .countdown {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+        .timer-warning {
+            font-size: 12px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .timer-expired {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
         }
 
         .payment-methods {
@@ -122,7 +141,7 @@
         }
 
         .payment-methods h3 {
-            color: #fff;
+            color: #333;
             margin-bottom: 20px;
         }
 
@@ -133,23 +152,22 @@
         }
 
         .payment-option {
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid #eee;
             border-radius: 15px;
             padding: 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.05);
         }
 
         .payment-option:hover {
-            border-color: #4ecdc4;
+            border-color: #667eea;
             transform: translateY(-2px);
         }
 
         .payment-option.selected {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.1);
+            border-color: #667eea;
+            background: #f0f4ff;
         }
 
         .payment-option .icon {
@@ -159,13 +177,47 @@
 
         .payment-option .name {
             font-weight: 600;
-            color: #fff;
+            color: #333;
             margin-bottom: 5px;
         }
 
         .payment-option .desc {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #666;
+        }
+
+        .customer-info {
+            margin-bottom: 30px;
+        }
+
+        .customer-info h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .btn-group {
@@ -185,13 +237,12 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: #eee;
+            color: #333;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
 
@@ -212,8 +263,8 @@
         }
 
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #4ecdc4;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -238,15 +289,15 @@
         }
 
         .alert-error {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
         }
 
         .alert-success {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
         }
 
         @media (max-width: 600px) {
@@ -273,7 +324,7 @@
     <div class="container">
         <div class="header">
             <h1>💳 Thanh Toán</h1>
-            <p>Hoàn tất đơn hàng MMO của bạn</p>
+            <p>Hoàn tất đơn hàng của bạn</p>
         </div>
 
         <div class="content">
@@ -282,9 +333,24 @@
             <!-- Order Summary -->
             <div class="order-summary">
                 <h3>📦 Tóm Tắt Đơn Hàng</h3>
+                
+                <!-- Payment Timer -->
+                <div id="paymentTimer" class="payment-timer" style="display: none;">
+                    <div class="timer-content">
+                        <div class="timer-icon">⏰</div>
+                        <div class="timer-text">
+                            <div class="timer-label">Thời gian thanh toán còn lại:</div>
+                            <div id="countdown" class="countdown">15:00</div>
+                        </div>
+                    </div>
+                    <div class="timer-warning">
+                        ⚠️ Vui lòng hoàn thành thanh toán trong thời gian trên
+                    </div>
+                </div>
+                
                 <div class="summary-row">
-                    <span id="productName">Loading...</span>
-                    <span id="productPrice" class="price">Loading...</span>
+                    <span>Locket Gold Key</span>
+                    <span class="price">30,000₫</span>
                 </div>
                 <div class="summary-row">
                     <span>Phí xử lý</span>
@@ -292,7 +358,7 @@
                 </div>
                 <div class="summary-row total">
                     <span>Tổng cộng</span>
-                    <span id="totalAmount" class="price">Loading...</span>
+                    <span id="totalAmount" class="price">30,000₫</span>
                 </div>
             </div>
 
@@ -353,31 +419,24 @@
 
     <script>
         let selectedPayment = 'vietqr';
-        let productData = {};
+        let orderData = {};
 
-        // Get product data from URL params
-        function getProductData() {
+        // Get order data from URL params
+        function getOrderData() {
             const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('productId');
-            const productName = urlParams.get('productName');
-            const productPrice = urlParams.get('productPrice');
-            
-            if (productId && productName && productPrice) {
-                productData = {
-                    id: productId,
-                    name: productName,
-                    price: parseInt(productPrice)
-                };
-                
-                updateProductDisplay();
+            const data = urlParams.get('data');
+            if (data) {
+                try {
+                    orderData = JSON.parse(decodeURIComponent(data));
+                    
+                    // Start payment timer if orderId exists
+                    if (orderData.orderId) {
+                        startPaymentTimer(orderData.orderId);
+                    }
+                } catch (e) {
+                    console.error('Error parsing order data:', e);
+                }
             }
-        }
-
-        // Update product display
-        function updateProductDisplay() {
-            document.getElementById('productName').textContent = productData.name;
-            document.getElementById('productPrice').textContent = new Intl.NumberFormat('vi-VN').format(productData.price) + '₫';
-            document.getElementById('totalAmount').textContent = new Intl.NumberFormat('vi-VN').format(productData.price) + '₫';
         }
 
         // Select payment method
@@ -419,13 +478,13 @@
             const order = {
                 customer,
                 items: [{
-                    id: productData.id,
-                    name: productData.name,
-                    price: productData.price,
+                    id: 'locket-gold',
+                    name: 'Locket Gold Key',
+                    price: window.productPrice || 30000,
                     downloads: 1
                 }],
                 paymentMethod: selectedPayment,
-                total: productData.price,
+                total: window.productPrice || 30000,
                 timestamp: new Date().toISOString()
             };
 
@@ -433,11 +492,11 @@
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('payBtn').disabled = true;
 
-                const response = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(order)
-                });
+                 const response = await fetch('/api/orders', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(order)
+                 });
 
                 const result = await response.json();
 
@@ -447,11 +506,11 @@
                 if (result.success) {
                     if (selectedPayment === 'vietqr') {
                         // Redirect to VietQR page
-                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=${productData.price}&customer=${encodeURIComponent(customer.fullName)}&productName=${encodeURIComponent(productData.name)}`;
+                        window.location.href = `vietqr.html?orderId=${result.orderId}&amount=${window.productPrice || 30000}&customer=${encodeURIComponent(customer.fullName)}`;
                     } else {
                         showAlert('✅ Đơn hàng đã được tạo thành công! Chúng tôi sẽ gửi key kích hoạt qua email.', 'success');
                         setTimeout(() => {
-                            window.location.href = '/';
+                            window.location.href = '/locket/locket.html';
                         }, 3000);
                     }
                 } else {
@@ -467,12 +526,109 @@
 
         // Go back
         function goBack() {
-            window.location.href = '/';
+            window.location.href = 'locket.html';
+        }
+
+        // Load payment config
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.productPrice = result.config.productPrice || 30000;
+                    updatePriceDisplay();
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+                window.productPrice = 30000;
+                updatePriceDisplay();
+            }
+        }
+
+        // Update price display
+        function updatePriceDisplay() {
+            const priceElements = document.querySelectorAll('.price');
+            priceElements.forEach(el => {
+                el.textContent = new Intl.NumberFormat('vi-VN').format(window.productPrice) + '₫';
+            });
+        }
+
+        // Payment Timer Functions
+        let timerInterval = null;
+        let currentOrderId = null;
+
+        function startPaymentTimer(orderId) {
+            currentOrderId = orderId;
+            const timerElement = document.getElementById('paymentTimer');
+            const countdownElement = document.getElementById('countdown');
+            
+            timerElement.style.display = 'block';
+            
+            // Start countdown
+            timerInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/orders/${orderId}/timeout`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const { timeRemaining, isExpired, status } = result.timeout;
+                        
+                        if (isExpired || status !== 'pending') {
+                            stopPaymentTimer();
+                            showTimerExpired();
+                            return;
+                        }
+                        
+                        // Update countdown display
+                        const minutes = Math.floor(timeRemaining / 60);
+                        const seconds = timeRemaining % 60;
+                        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        
+                        // Change color when less than 5 minutes
+                        if (timeRemaining < 300) {
+                            timerElement.classList.add('timer-expired');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking timer:', error);
+                }
+            }, 1000);
+        }
+
+        function stopPaymentTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function showTimerExpired() {
+            const timerElement = document.getElementById('paymentTimer');
+            const countdownElement = document.getElementById('countdown');
+            
+            timerElement.classList.add('timer-expired');
+            countdownElement.textContent = '00:00';
+            
+            // Show expired message
+            const warningElement = timerElement.querySelector('.timer-warning');
+            warningElement.textContent = '❌ Đơn hàng đã hết hạn thanh toán!';
+            warningElement.style.color = '#fff';
+            warningElement.style.fontWeight = 'bold';
+            
+            // Disable payment button
+            const paymentBtn = document.getElementById('paymentBtn');
+            if (paymentBtn) {
+                paymentBtn.disabled = true;
+                paymentBtn.textContent = 'Đơn hàng đã hết hạn';
+                paymentBtn.style.background = '#ccc';
+            }
         }
 
         // Initialize
         window.addEventListener('load', () => {
-            getProductData();
+            loadPaymentConfig();
+            getOrderData();
         });
     </script>
 </body>

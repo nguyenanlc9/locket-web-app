@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Admin - Quản Lý Dịch Vụ Premium</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal" style="display: flex;">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>🔐 Đăng Nhập Admin</h2>
+                <p>Vui lòng đăng nhập để truy cập bảng điều khiển</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group" id="2fa-group">
+                    <label for="2fa-code">Mã 2FA (Google Authenticator):</label>
+                    <input type="text" id="2fa-code" placeholder="Nhập mã 6 số từ app">
+                </div>
+                <div id="qr-setup" style="display: none;">
+                    <div class="qr-container">
+                        <h3>🔐 Thiết lập Google Authenticator</h3>
+                        <p>Quét QR code bằng Google Authenticator hoặc nhập mã thủ công:</p>
+                        <div id="qr-code"></div>
+                        <div class="manual-key">
+                            <label>Mã thủ công:</label>
+                            <input type="text" id="manual-key" readonly>
+                            <button onclick="copyManualKey()">📋 Copy</button>
+                        </div>
+                        <button class="btn btn-primary" onclick="verify2FASetup()">✅ Đã thiết lập xong</button>
+                    </div>
+                </div>
+                <div class="login-actions">
+                    <button class="btn btn-primary" onclick="login()">🔐 Đăng Nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-container" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>Admin</h2>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="active" onclick="showSection('dashboard')">📊 Dashboard</a></li>
+                <li><a href="#categories" onclick="showSection('categories')">📁 Danh Mục</a></li>
+                <li><a href="#products" onclick="showSection('products')">📦 Sản Phẩm</a></li>
+                <li><a href="#orders" onclick="showSection('orders')">🛒 Đơn Hàng</a></li>
+                <li><a href="#settings" onclick="showSection('settings')">⚙️ Cài Đặt</a></li>
+                <li><a href="#locket-config" onclick="showSection('locket-config')">🔑 Locket Config</a></li>
+                <li><a href="#locket-packages" onclick="showSection('locket-packages')">📦 Gói Locket</a></li>
+                <li><a href="#payment-config" onclick="showSection('payment-config')">💳 Thanh Toán</a></li>
+                <li><a href="#telegram-notify" onclick="showSection('telegram-notify')">📱 Telegram</a></li>
+            </ul>
+    </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section">
+                <div class="section-header">
+                    <h2>📊 Tổng Quan Hệ Thống</h2>
+                    <div class="last-updated" id="last-updated">Đang tải...</div>
+        </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="icon">📦</div>
+                        <div class="number" id="total-products">0</div>
+                        <div class="label">Sản Phẩm</div>
+                        <div class="sub-label">Tổng số sản phẩm</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🛒</div>
+                        <div class="number" id="total-orders">0</div>
+                        <div class="label">Đơn Hàng</div>
+                        <div class="sub-label">Tổng số đơn hàng</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">💰</div>
+                        <div class="number" id="total-revenue">0₫</div>
+                        <div class="label">Doanh Thu</div>
+                        <div class="sub-label">Tổng doanh thu</div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>🚀 Thao Tác Nhanh</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="showSection('products')">📦 Quản Lý Sản Phẩm</button>
+                        <button class="btn btn-primary" onclick="showSection('orders')">🛒 Xem Đơn Hàng</button>
+                        <button class="btn btn-secondary" onclick="showSection('settings')">⚙️ Cài Đặt</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div id="categories-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📁 Quản Lý Danh Mục</h2>
+                    <button class="btn btn-primary" onclick="openCategoryModal()">➕ Thêm Danh Mục</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên</th>
+                            <th>Mô Tả</th>
+                            <th>Icon</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table">
+                        <!-- Categories will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Category Modal -->
+            <div id="categoryModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="categoryModalTitle">Thêm Danh Mục</h3>
+                        <span class="close" onclick="closeCategoryModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="categoryForm">
+                            <div class="form-group">
+                                <label>Tên Danh Mục:</label>
+                                <input type="text" id="categoryName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Mô Tả:</label>
+                                <textarea id="categoryDescription" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Icon:</label>
+                                <input type="text" id="categoryIcon" placeholder="📁" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeCategoryModal()">Hủy</button>
+                        <button class="btn btn-primary" onclick="saveCategory()">Lưu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <div id="products-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📦 Quản Lý Sản Phẩm</h2>
+                    <button class="btn btn-primary" onclick="openProductModal()">➕ Thêm Sản Phẩm</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên</th>
+                            <th>Danh Mục</th>
+                            <th>Giá</th>
+                            <th>Tồn Kho</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Product Modal -->
+            <div id="productModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="productModalTitle">Thêm Sản Phẩm</h3>
+                        <span class="close" onclick="closeProductModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="productForm">
+                            <div class="form-group">
+                                <label>Tên Sản Phẩm:</label>
+                                <input type="text" id="productName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Mô Tả:</label>
+                                <textarea id="productDescription" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Danh Mục:</label>
+                                <select id="productCategory" required>
+                                    <option value="">Chọn danh mục</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Giá:</label>
+                                    <input type="number" id="productPrice" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Giá Gốc:</label>
+                                    <input type="number" id="productOriginalPrice">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tồn Kho:</label>
+                                    <input type="number" id="productStock" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Trạng Thái:</label>
+                                    <select id="productStatus">
+                                        <option value="active">Hoạt động</option>
+                                        <option value="inactive">Tạm dừng</option>
+                                        <option value="contact">Liên hệ</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Hình Ảnh:</label>
+                                <div class="image-upload-container">
+                                    <input type="file" id="productImageFile" accept="image/*" onchange="previewImage(this, 'productImagePreview')">
+                                    <div class="image-preview" id="productImagePreview" style="display: none;">
+                                        <img id="productImagePreviewImg" src="" alt="Preview">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeImagePreview('productImagePreview')">🗑️ Xóa</button>
+                                    </div>
+                                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill"></div>
+                                        </div>
+                                        <span class="progress-text">Đang upload...</span>
+                                    </div>
+                                    <div class="image-url-input">
+                                        <label>Hoặc nhập URL:</label>
+                                        <input type="url" id="productImage" placeholder="https://example.com/image.jpg" onchange="loadImageFromUrl(this.value)">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeProductModal()">Hủy</button>
+                        <button class="btn btn-primary" onclick="saveProduct()">Lưu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div id="orders-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🛒 Quản Lý Đơn Hàng</h2>
+                </div>
+                <table class="table">
+                            <thead>
+                                <tr>
+                            <th>ID</th>
+                                    <th>Khách Hàng</th>
+                                    <th>Sản Phẩm</th>
+                                    <th>Tổng Tiền</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Ngày Tạo</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                    <tbody id="orders-table">
+                        <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>⚙️ Cài Đặt Hệ Thống</h2>
+                </div>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label>Tên Website:</label>
+                        <input type="text" id="site-name" placeholder="MMO Services Store">
+            </div>
+                    <div class="form-group">
+                        <label>Mô Tả Website:</label>
+                        <textarea id="site-description" placeholder="✨ Mô tả chi tiết về website của bạn...
+🎯 Ví dụ: Cửa hàng dịch vụ MMO uy tín - ChatGPT, YouTube, CapCut, Netflix và nhiều hơn nữa!
+🚀 Cung cấp dịch vụ premium với giá cả hợp lý
+💎 Đảm bảo chất lượng và hỗ trợ 24/7"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Liên Hệ:</label>
+                        <input type="email" id="contact-email" placeholder="admin@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Số Điện Thoại:</label>
+                        <input type="tel" id="contact-phone" placeholder="0123456789">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 Lưu Cài Đặt</button>
+                    </div>
+                </div>
+
+            <!-- Locket Config Section -->
+            <div id="locket-config-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🔑 Cấu Hình Locket</h2>
+                </div>
+                <div class="form-container">
+                        <div class="form-group">
+                        <label>Tên Locket:</label>
+                        <input type="text" id="locket-name" placeholder="Locket Gold">
+                        </div>
+                    <div class="form-group">
+                        <label>Mô Tả:</label>
+                        <textarea id="locket-description" placeholder="🔐 Mô tả chi tiết về dịch vụ Locket Gold...
+⚡ Dịch vụ VPN cao cấp với tốc độ siêu nhanh
+🌍 Hỗ trợ nhiều quốc gia và server ổn định
+🛡️ Bảo mật tuyệt đối và không lưu log
+📱 Tương thích với mọi thiết bị
+💎 Gói premium với giá cả hợp lý"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveLocketConfig()">💾 Lưu Cấu Hình Locket</button>
+                </div>
+                    </div>
+
+            <!-- Locket Packages Section -->
+            <div id="locket-packages-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📦 Quản Lý Gói Locket</h2>
+                    <button class="btn btn-primary" onclick="openLocketPackageModal()">➕ Thêm Gói Locket</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên Gói</th>
+                            <th>Thời Gian</th>
+                            <th>Giá</th>
+                            <th>Mô Tả</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="locket-packages-table">
+                        <!-- Locket packages will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Locket Package Modal -->
+            <div id="locketPackageModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="locketPackageModalTitle">Thêm Gói Locket</h3>
+                        <span class="close" onclick="closeLocketPackageModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="locketPackageForm">
+                            <div class="form-group">
+                                <label>Tên Gói:</label>
+                                <input type="text" id="locketPackageName" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Thời Gian:</label>
+                                    <input type="text" id="locketPackageDuration" placeholder="1 Tháng" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Giá:</label>
+                                    <input type="number" id="locketPackagePrice" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mô Tả:</label>
+                                <textarea id="locketPackageDescription" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Tính Năng:</label>
+                                <textarea id="locketPackageFeatures" placeholder="Mỗi tính năng trên một dòng..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Trạng Thái:</label>
+                                <select id="locketPackageStatus">
+                                    <option value="active">Hoạt động</option>
+                                    <option value="inactive">Tạm dừng</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeLocketPackageModal()">Hủy</button>
+                        <button class="btn btn-primary" onclick="saveLocketPackage()">Lưu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Config Section -->
+            <div id="payment-config-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>💳 Cấu Hình Thanh Toán</h2>
+                        </div>
+                <div class="form-container">
+                        <div class="form-group">
+                        <label>Ngân hàng:</label>
+                        <input type="text" id="payment-bank-name" placeholder="MBBank">
+                        </div>
+                        <div class="form-group">
+                        <label>Số tài khoản:</label>
+                        <input type="text" id="payment-account-number" placeholder="1613072005">
+                        </div>
+                        <div class="form-group">
+                        <label>Chủ tài khoản:</label>
+                        <input type="text" id="payment-account-holder" placeholder="NGUYEN HUYNH TUONG AN">
+                        </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="savePaymentConfig()">💾 Lưu Cấu Hình Thanh Toán</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telegram Notification Section -->
+            <div id="telegram-notify-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📱 Cấu Hình Telegram</h2>
+                </div>
+                <div class="form-container">
+                        <div class="form-group">
+                        <label>Bot Token:</label>
+                        <input type="text" id="telegram-bot-token" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz">
+                        </div>
+                        <div class="form-group">
+                        <label>Chat ID:</label>
+                        <input type="text" id="telegram-chat-id" placeholder="-1001234567890">
+                        </div>
+                    <div class="form-group">
+                        <label>Trạng thái:</label>
+                        <select id="telegram-status">
+                            <option value="active">Hoạt động</option>
+                            <option value="inactive">Tạm dừng</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>Thông báo khi có đơn hàng mới:</label>
+                        <input type="checkbox" id="telegram-new-order" checked>
+                </div>
+                    <div class="form-group checkbox-group">
+                        <label>Thông báo khi thanh toán thành công:</label>
+                        <input type="checkbox" id="telegram-payment-success" checked>
+            </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveTelegramConfig()">💾 Lưu Cấu Hình Telegram</button>
+                        <button class="btn btn-secondary" onclick="testTelegramNotification()">🧪 Test Thông Báo</button>
+        </div>
+    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let database = {
+            categories: [],
+            products: [],
+            orders: [],
+            locket_packages: [],
+            settings: {
+                site_name: 'MMO Services Store',
+                site_description: 'Cửa hàng dịch vụ MMO hàng đầu',
+                contact_email: 'admin@example.com',
+                contact_phone: '0123456789',
+                payment_config: {
+                    bankName: 'MBBank',
+                    accountNumber: '1613072005',
+                    accountHolder: 'NGUYEN HUYNH TUONG AN',
+                    productPrice: 30000
+                },
+                telegram_config: {
+                    botToken: '',
+                    chatId: '',
+                    status: 'inactive',
+                    notifyNewOrder: true,
+                    notifyPaymentSuccess: true
+                }
+            }
+        };
+
+        // Show section
+        function showSection(section) {
+            console.log('showSection called with:', section);
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.style.display = 'none';
+                console.log('Hiding section:', el.id);
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-menu a').forEach(el => el.classList.remove('active'));
+            
+            // Show selected section
+            let sectionId = section + '-section';
+            
+            // Handle special cases
+            if (section === 'payment-config') {
+                sectionId = 'payment-config-section';
+            } else if (section === 'telegram-notify') {
+                sectionId = 'telegram-notify-section';
+            }
+            
+            console.log('Looking for section with ID:', sectionId);
+            const sectionElement = document.getElementById(sectionId);
+            console.log('Found section element:', sectionElement);
+            
+            if (sectionElement) {
+                sectionElement.style.display = 'block';
+                console.log('Section displayed:', sectionId);
+                } else {
+                console.error('Section not found:', sectionId);
+            }
+            
+            // Add active class to clicked nav item
+            if (event && event.target) {
+            event.target.classList.add('active');
+            }
+        }
+
+        // Load database
+        async function loadDatabase() {
+            try {
+                console.log('Fetching database from /api/database...');
+                const response = await fetch('/api/database');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Database response:', data);
+                    if (data.success) {
+                        database = data.database;
+                        updateStats();
+                        console.log('Database loaded successfully:', database);
+                    }
+                } else {
+                    console.error('API response not ok:', response.status);
+                    loadFallbackData();
+                }
+            } catch (error) {
+                console.error('Error loading database:', error);
+                console.log('Loading fallback data...');
+                loadFallbackData();
+            }
+        }
+
+        // Load fallback data
+        function loadFallbackData() {
+            database = {
+                categories: [
+                    { id: 1, name: "ChatGPT & AI", description: "Dịch vụ ChatGPT, Claude, Gemini", icon: "🤖" },
+                    { id: 2, name: "YouTube Premium", description: "YouTube Premium, Music, TV", icon: "📺" },
+                    { id: 3, name: "CapCut Pro", description: "CapCut Pro, Adobe Premiere", icon: "✂️" },
+                    { id: 4, name: "Netflix & Streaming", description: "Netflix, Disney+, HBO Max", icon: "🎬" },
+                    { id: 5, name: "Adobe Creative", description: "Adobe Creative Cloud, Photoshop", icon: "🎨" },
+                    { id: 6, name: "Microsoft Office", description: "Microsoft 365, Office 365", icon: "📊" }
+                ],
+                products: [
+                    { id: 1, category_id: 1, name: "ChatGPT Plus 1 Tháng", price: 200000, stock: 50, status: "active" },
+                    { id: 2, category_id: 1, name: "Claude Pro 1 Tháng", price: 180000, stock: 30, status: "active" },
+                    { id: 3, category_id: 2, name: "YouTube Premium 1 Tháng", price: 150000, stock: 100, status: "active" },
+                    { id: 4, category_id: 3, name: "CapCut Pro 1 Năm", price: 500000, stock: 25, status: "active" },
+                    { id: 5, category_id: 4, name: "Netflix Premium 1 Tháng", price: 300000, stock: 40, status: "active" },
+                    { id: 6, category_id: 5, name: "Adobe Creative Cloud 1 Tháng", price: 800000, stock: 15, status: "active" }
+                ],
+                orders: [
+                    { id: "LOCKET1760681418254", customer_name: "sad", product_name: "Locket Gold Key", total: 30000, status: "pending", created_at: "2025-10-17T06:10:18.254Z" },
+                    { id: "LOCKET1760681705580", customer_name: "Khách hàng", product_name: "Locket Gold Key", total: 30000, status: "pending", created_at: "2025-10-17T06:15:05.580Z" }
+                ],
+                locket_packages: [
+                    { id: 1, name: "Locket Gold Key", duration: "1 Tháng", price: 30000, description: "Gói Locket Gold Key với tốc độ cao và ổn định", status: "active" }
+                ],
+                settings: {
+                    site_name: "MMO Services Store",
+                    site_description: "Cửa hàng dịch vụ MMO uy tín - ChatGPT, YouTube, CapCut, Netflix và nhiều hơn nữa!",
+                    contact_email: "admin@andev.site",
+                    contact_phone: "0123456789",
+                    payment_config: {
+                        bankName: "MBBank",
+                        accountNumber: "1613072005",
+                        accountHolder: "NGUYEN HUYNH TUONG AN",
+                        productPrice: 30000
+                    },
+                    telegram_config: {
+                        botToken: "",
+                        chatId: "",
+                        status: "inactive",
+                        notifyNewOrder: true,
+                        notifyPaymentSuccess: true
+                    }
+                }
+            };
+            updateStats();
+            console.log('Fallback data loaded:', database);
+        }
+
+        // Update stats with animation
+        function updateStats() {
+            const productsCount = database.products?.length || 0;
+            const ordersCount = database.orders?.length || 0;
+            const totalRevenue = database.orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+            
+            // Update last updated time
+            const lastUpdatedElement = document.getElementById('last-updated');
+            if (lastUpdatedElement) {
+                lastUpdatedElement.textContent = `Cập nhật lúc: ${new Date().toLocaleString('vi-VN')}`;
+            }
+            
+            // Animate numbers
+            animateNumber('total-products', productsCount);
+            animateNumber('total-orders', ordersCount);
+            animateNumber('total-revenue', totalRevenue, '₫');
+            
+            console.log('Stats updated:', { products: productsCount, orders: ordersCount, revenue: totalRevenue });
+        }
+
+        // Animate number counting
+        function animateNumber(elementId, targetValue, suffix = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const startValue = 0;
+            const duration = 1000; // 1 second
+            const startTime = performance.now();
+            
+            function updateNumber(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuart);
+                
+                if (suffix === '₫') {
+                    element.textContent = new Intl.NumberFormat('vi-VN').format(currentValue) + suffix;
+            } else {
+                    element.textContent = currentValue;
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateNumber);
+                }
+            }
+            
+            requestAnimationFrame(updateNumber);
+        }
+
+        // Load Payment Config
+        function loadPaymentConfig() {
+            if (database.settings && database.settings.payment_config) {
+                const config = database.settings.payment_config;
+                document.getElementById('payment-bank-name').value = config.bankName || '';
+                document.getElementById('payment-account-number').value = config.accountNumber || '';
+                document.getElementById('payment-account-holder').value = config.accountHolder || '';
+            }
+        }
+
+        // Save Payment Config
+        function savePaymentConfig() {
+            if (!database.settings) database.settings = {};
+            
+            database.settings.payment_config = {
+                bankName: document.getElementById('payment-bank-name').value,
+                accountNumber: document.getElementById('payment-account-number').value,
+                accountHolder: document.getElementById('payment-account-holder').value
+            };
+
+            saveDatabase();
+            alert('✅ Cấu hình thanh toán đã được lưu!');
+        }
+
+        // Load Telegram Config
+        function loadTelegramConfig() {
+            if (database.settings && database.settings.telegram_config) {
+                const config = database.settings.telegram_config;
+                document.getElementById('telegram-bot-token').value = config.botToken || '';
+                document.getElementById('telegram-chat-id').value = config.chatId || '';
+                document.getElementById('telegram-status').value = config.status || 'inactive';
+                document.getElementById('telegram-new-order').checked = config.notifyNewOrder || false;
+                document.getElementById('telegram-payment-success').checked = config.notifyPaymentSuccess || false;
+            }
+        }
+
+        // Save Telegram Config
+        function saveTelegramConfig() {
+            if (!database.settings) database.settings = {};
+            
+            database.settings.telegram_config = {
+                botToken: document.getElementById('telegram-bot-token').value,
+                chatId: document.getElementById('telegram-chat-id').value,
+                status: document.getElementById('telegram-status').value,
+                notifyNewOrder: document.getElementById('telegram-new-order').checked,
+                notifyPaymentSuccess: document.getElementById('telegram-payment-success').checked
+            };
+
+            saveDatabase();
+            alert('✅ Cấu hình Telegram đã được lưu!');
+        }
+
+        // Test Telegram Notification
+        function testTelegramNotification() {
+            const botToken = document.getElementById('telegram-bot-token').value;
+            const chatId = document.getElementById('telegram-chat-id').value;
+            
+            if (!botToken || !chatId) {
+                alert('❌ Vui lòng nhập Bot Token và Chat ID!');
+                return;
+            }
+
+            const message = `🧪 Test thông báo từ Admin Panel
+⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}
+✅ Cấu hình Telegram hoạt động bình thường!`;
+
+            fetch('/api/telegram/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    botToken: botToken,
+                    chatId: chatId,
+                    message: message
+                })
+            }).then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ Test thông báo thành công!');
+                } else {
+                    alert('❌ Lỗi: ' + result.message);
+                }
+            }).catch(error => {
+                alert('❌ Lỗi kết nối: ' + error.message);
+            });
+        }
+
+        // Save database
+        async function saveDatabase() {
+            try {
+                const response = await fetch('/api/database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(database)
+                });
+                if (response.ok) {
+                    console.log('Database saved successfully');
+                }
+            } catch (error) {
+                console.error('Error saving database:', error);
+            }
+        }
+
+        // Load categories
+        function loadCategories() {
+            const tbody = document.getElementById('categories-table');
+            tbody.innerHTML = '';
+            
+            if (database.categories) {
+                database.categories.forEach(category => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${category.id}</td>
+                        <td>${category.name}</td>
+                        <td>${category.description || ''}</td>
+                        <td>${category.icon || ''}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="editCategory(${category.id})">✏️</button>
+                            <button class="btn btn-secondary" onclick="deleteCategory(${category.id})">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Load products
+        function loadProducts() {
+            const tbody = document.getElementById('products-table');
+            tbody.innerHTML = '';
+            
+            if (database.products) {
+                database.products.forEach(product => {
+                    const category = database.categories?.find(cat => cat.id === product.category_id);
+                    const statusBadge = getProductStatusBadge(product.status);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                        <td>${category?.name || 'N/A'}</td>
+                        <td>${new Intl.NumberFormat('vi-VN').format(product.price)}₫</td>
+                        <td>${product.stock || 0}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="editProduct(${product.id})">✏️</button>
+                            <button class="btn btn-secondary" onclick="deleteProduct(${product.id})">🗑️</button>
+                    </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Load orders
+        function loadOrders() {
+            const tbody = document.getElementById('orders-table');
+            tbody.innerHTML = '';
+            
+            if (database.orders) {
+                database.orders.forEach(order => {
+                    const statusBadge = order.status === 'completed' ? 
+                        '<span class="badge badge-success">Hoàn thành</span>' : 
+                        order.status === 'pending' ? 
+                        '<span class="badge badge-warning">Chờ xử lý</span>' : 
+                        '<span class="badge badge-danger">Đã hủy</span>';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${order.id}</td>
+                        <td>${order.customer_name || 'N/A'}</td>
+                        <td>${order.product_name || order.package_name || 'N/A'}</td>
+                        <td>${new Intl.NumberFormat('vi-VN').format(order.total)}₫</td>
+                        <td>${statusBadge}</td>
+                        <td>${new Date(order.created_at).toLocaleDateString('vi-VN')}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="viewOrder('${order.id}')">👁️</button>
+                            <button class="btn btn-secondary" onclick="updateOrderStatus('${order.id}')">🔄</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Load locket packages
+        function loadLocketPackages() {
+            const tbody = document.getElementById('locket-packages-table');
+            tbody.innerHTML = '';
+            
+            if (database.locket_packages) {
+                database.locket_packages.forEach(pkg => {
+                    const statusBadge = pkg.status === 'active' ? 
+                        '<span class="badge badge-success">Hoạt động</span>' : 
+                        '<span class="badge badge-warning">Tạm dừng</span>';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${pkg.id}</td>
+                        <td>${pkg.name}</td>
+                        <td>${pkg.duration}</td>
+                        <td>${new Intl.NumberFormat('vi-VN').format(pkg.price)}₫</td>
+                        <td>${pkg.description || ''}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="editLocketPackage(${pkg.id})">✏️</button>
+                            <button class="btn btn-secondary" onclick="deleteLocketPackage(${pkg.id})">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Load settings
+        function loadSettings() {
+            if (database.settings) {
+                document.getElementById('site-name').value = database.settings.site_name || '';
+                document.getElementById('site-description').value = database.settings.site_description || '';
+                document.getElementById('contact-email').value = database.settings.contact_email || '';
+                document.getElementById('contact-phone').value = database.settings.contact_phone || '';
+            }
+        }
+
+        // Load locket config
+        function loadLocketConfig() {
+            if (database.settings && database.settings.locket_config) {
+                const config = database.settings.locket_config;
+                document.getElementById('locket-name').value = config.name || '';
+                document.getElementById('locket-description').value = config.description || '';
+            }
+        }
+
+        // Save settings
+        function saveSettings() {
+            if (!database.settings) database.settings = {};
+            
+            database.settings.site_name = document.getElementById('site-name').value;
+            database.settings.site_description = document.getElementById('site-description').value;
+            database.settings.contact_email = document.getElementById('contact-email').value;
+            database.settings.contact_phone = document.getElementById('contact-phone').value;
+
+            saveDatabase();
+            alert('✅ Cài đặt đã được lưu!');
+        }
+
+        // Save locket config
+        function saveLocketConfig() {
+            if (!database.settings) database.settings = {};
+            if (!database.settings.locket_config) database.settings.locket_config = {};
+            
+            database.settings.locket_config.name = document.getElementById('locket-name').value;
+            database.settings.locket_config.description = document.getElementById('locket-description').value;
+
+            saveDatabase();
+            alert('✅ Cấu hình Locket đã được lưu!');
+        }
+
+        // Placeholder functions for modals and actions
+        function openCategoryModal() { alert('Chức năng đang phát triển'); }
+        function openProductModal() { alert('Chức năng đang phát triển'); }
+        function openLocketPackageModal() { alert('Chức năng đang phát triển'); }
+        function editCategory(id) { alert('Chức năng đang phát triển'); }
+        function deleteCategory(id) { alert('Chức năng đang phát triển'); }
+        function editProduct(id) { alert('Chức năng đang phát triển'); }
+        function deleteProduct(id) { alert('Chức năng đang phát triển'); }
+        function viewOrder(id) { alert('Chức năng đang phát triển'); }
+        function updateOrderStatus(id) { alert('Chức năng đang phát triển'); }
+        function editLocketPackage(id) { alert('Chức năng đang phát triển'); }
+        function deleteLocketPackage(id) { alert('Chức năng đang phát triển'); }
+
+        // Show loading animation
+        function showLoading() {
+            const loadingElement = document.getElementById('last-updated');
+            if (loadingElement) {
+                loadingElement.innerHTML = '<span class="loading-dots">Đang tải dữ liệu<span>.</span><span>.</span><span>.</span></span>';
+            }
+        }
+
+        // Hide loading animation
+        function hideLoading() {
+            const loadingElement = document.getElementById('last-updated');
+            if (loadingElement) {
+                loadingElement.textContent = `Cập nhật lúc: ${new Date().toLocaleString('vi-VN')}`;
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', function() {
+            // Show loading animation
+            showLoading();
+            
+            // Simulate loading delay for better UX
+            setTimeout(() => {
+                // Load data immediately without waiting for server
+                loadFallbackData();
+                
+                // Try to load from server in background
+                loadDatabase();
+                
+                // Hide loading animation
+                hideLoading();
+            }, 800);
+            
+            // Load configs when switching to sections
+            const originalShowSection = showSection;
+            showSection = function(section) {
+                originalShowSection(section);
+                if (section === 'categories') {
+                    loadCategories();
+                } else if (section === 'products') {
+                    loadProducts();
+                } else if (section === 'orders') {
+                loadOrders();
+                } else if (section === 'settings') {
+                    loadSettings();
+                } else if (section === 'locket-config') {
+                    loadLocketConfig();
+                } else if (section === 'locket-packages') {
+                    loadLocketPackages();
+                } else if (section === 'payment-config') {
+                    loadPaymentConfig();
+                } else if (section === 'telegram-notify') {
+                    loadTelegramConfig();
+                }
+            };
+        });
+
+        // Global variables for 2FA
+        let currentSecret = null;
+
+        // CRUD Functions for Categories
+        function openCategoryModal(categoryId = null) {
+            const modal = document.getElementById('categoryModal');
+            const title = document.getElementById('categoryModalTitle');
+            const form = document.getElementById('categoryForm');
+            
+            if (categoryId) {
+                title.textContent = 'Sửa Danh Mục';
+                const category = database.categories.find(c => c.id === categoryId);
+                if (category) {
+                    document.getElementById('categoryName').value = category.name;
+                    document.getElementById('categoryDescription').value = category.description;
+                    document.getElementById('categoryIcon').value = category.icon;
+                    form.dataset.categoryId = categoryId;
+                }
+            } else {
+                title.textContent = 'Thêm Danh Mục';
+                form.reset();
+                delete form.dataset.categoryId;
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').style.display = 'none';
+        }
+
+        function saveCategory() {
+            const form = document.getElementById('categoryForm');
+            const name = document.getElementById('categoryName').value;
+            const description = document.getElementById('categoryDescription').value;
+            const icon = document.getElementById('categoryIcon').value;
+            
+            if (!name || !description || !icon) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+            
+            const categoryId = form.dataset.categoryId;
+            
+            if (categoryId) {
+                // Update existing category
+                const category = database.categories.find(c => c.id === parseInt(categoryId));
+                if (category) {
+                    category.name = name;
+                    category.description = description;
+                    category.icon = icon;
+                }
+            } else {
+                // Add new category
+                const newId = Math.max(...database.categories.map(c => c.id), 0) + 1;
+                database.categories.push({
+                    id: newId,
+                    name: name,
+                    description: description,
+                    icon: icon,
+                    created_at: new Date().toISOString()
+                });
+            }
+            
+            saveDatabase();
+            loadCategories();
+            closeCategoryModal();
+        }
+
+        function deleteCategory(categoryId) {
+            if (confirm('Bạn có chắc muốn xóa danh mục này?')) {
+                database.categories = database.categories.filter(c => c.id !== categoryId);
+                saveDatabase();
+                loadCategories();
+            }
+        }
+
+        function loadCategories() {
+            const tbody = document.getElementById('categories-table');
+            tbody.innerHTML = database.categories.map(category => `
+                <tr>
+                    <td>${category.id}</td>
+                    <td>${category.name}</td>
+                    <td>${category.description}</td>
+                    <td>${category.icon}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openCategoryModal(${category.id})">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // CRUD Functions for Products
+        function openProductModal(productId = null) {
+            const modal = document.getElementById('productModal');
+            const title = document.getElementById('productModalTitle');
+            const form = document.getElementById('productForm');
+            
+            // Load categories for dropdown
+            const categorySelect = document.getElementById('productCategory');
+            categorySelect.innerHTML = '<option value="">Chọn danh mục</option>' + 
+                database.categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            
+            if (productId) {
+                title.textContent = 'Sửa Sản Phẩm';
+                const product = database.products.find(p => p.id === productId);
+                if (product) {
+                    document.getElementById('productName').value = product.name;
+                    document.getElementById('productDescription').value = product.description;
+                    document.getElementById('productCategory').value = product.category_id;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productOriginalPrice').value = product.original_price || '';
+                    document.getElementById('productStock').value = product.stock;
+                    document.getElementById('productStatus').value = product.status;
+                    document.getElementById('productImage').value = product.image || '';
+                    
+                    // Load existing image preview
+                    if (product.image) {
+                        const preview = document.getElementById('productImagePreview');
+                        const img = document.getElementById('productImagePreviewImg');
+                        img.src = product.image;
+                        preview.style.display = 'block';
+                    }
+                    
+                    form.dataset.productId = productId;
+                }
+            } else {
+                title.textContent = 'Thêm Sản Phẩm';
+                form.reset();
+                delete form.dataset.productId;
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').style.display = 'none';
+            // Reset image preview
+            const preview = document.getElementById('productImagePreview');
+            const img = document.getElementById('productImagePreviewImg');
+            const fileInput = document.getElementById('productImageFile');
+            preview.style.display = 'none';
+            img.src = '';
+            fileInput.value = '';
+        }
+
+        async function saveProduct() {
+            const form = document.getElementById('productForm');
+            const name = document.getElementById('productName').value;
+            const description = document.getElementById('productDescription').value;
+            const categoryId = document.getElementById('productCategory').value;
+            const price = document.getElementById('productPrice').value;
+            const originalPrice = document.getElementById('productOriginalPrice').value;
+            const stock = document.getElementById('productStock').value;
+            const status = document.getElementById('productStatus').value;
+            const imageUrl = document.getElementById('productImage').value;
+            const imageFile = document.getElementById('productImageFile').files[0];
+            
+            if (!name || !description || !categoryId || !price || !stock) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+            
+            let finalImageUrl = imageUrl;
+            
+            // Upload image if file is selected
+            if (imageFile) {
+                // Show progress
+                const progressDiv = document.getElementById('uploadProgress');
+                progressDiv.style.display = 'block';
+                
+                const uploadedUrl = await uploadImage(imageFile, 'products');
+                
+                // Hide progress
+                progressDiv.style.display = 'none';
+                
+                if (uploadedUrl) {
+                    finalImageUrl = uploadedUrl;
+                } else {
+                    return; // Stop if upload failed
+                }
+            }
+            
+            const productId = form.dataset.productId;
+            
+            if (productId) {
+                // Update existing product
+                const product = database.products.find(p => p.id === parseInt(productId));
+                if (product) {
+                    product.name = name;
+                    product.description = description;
+                    product.category_id = parseInt(categoryId);
+                    product.price = parseInt(price);
+                    product.original_price = originalPrice ? parseInt(originalPrice) : parseInt(price);
+                    product.stock = parseInt(stock);
+                    product.status = status;
+                    product.image = finalImageUrl;
+                }
+            } else {
+                // Add new product
+                const newId = Math.max(...database.products.map(p => p.id), 0) + 1;
+                database.products.push({
+                    id: newId,
+                    category_id: parseInt(categoryId),
+                    name: name,
+                    description: description,
+                    price: parseInt(price),
+                    original_price: originalPrice ? parseInt(originalPrice) : parseInt(price),
+                    stock: parseInt(stock),
+                    image: finalImageUrl,
+                    status: status,
+                    features: [],
+                    created_at: new Date().toISOString()
+                });
+            }
+            
+            saveDatabase();
+            loadProducts();
+            closeProductModal();
+        }
+
+        function deleteProduct(productId) {
+            if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+                database.products = database.products.filter(p => p.id !== productId);
+                saveDatabase();
+                loadProducts();
+            }
+        }
+
+        function getProductStatusText(status) {
+            const statusMap = {
+                'active': 'Hoạt động',
+                'inactive': 'Tạm dừng',
+                'contact': 'Liên hệ'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getProductStatusBadge(status) {
+            const statusMap = {
+                'active': '<span class="badge badge-success">Hoạt động</span>',
+                'inactive': '<span class="badge badge-warning">Tạm dừng</span>',
+                'contact': '<span class="badge badge-info">Liên hệ</span>'
+            };
+            return statusMap[status] || '<span class="badge badge-secondary">' + status + '</span>';
+        }
+
+        function loadProducts() {
+            const tbody = document.getElementById('products-table');
+            tbody.innerHTML = database.products.map(product => {
+                const category = database.categories.find(c => c.id === product.category_id);
+                return `
+                    <tr>
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                        <td>${category ? category.name : 'N/A'}</td>
+                        <td>${new Intl.NumberFormat('vi-VN').format(product.price)}₫</td>
+                        <td>${product.stock}</td>
+                        <td><span class="status-${product.status}">${getProductStatusText(product.status)}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openProductModal(${product.id})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadOrders() {
+            const tbody = document.getElementById('orders-table');
+            if (!tbody) return;
+            
+            tbody.innerHTML = database.orders.map(order => `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.customer_name || order.customer?.fullName || 'N/A'}</td>
+                    <td>${order.customer_email || order.customer?.email || 'N/A'}</td>
+                    <td>${order.package_name || order.items?.[0]?.name || 'N/A'}</td>
+                    <td>${new Intl.NumberFormat('vi-VN').format(order.total)}₫</td>
+                    <td><span class="status-${order.status}">${order.status}</span></td>
+                    <td>${new Date(order.created_at || order.timestamp).toLocaleString('vi-VN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="updateOrderStatus('${order.id}', 'paid')">✅</button>
+                        <button class="btn btn-sm btn-warning" onclick="updateOrderStatus('${order.id}', 'pending')">⏳</button>
+                        <button class="btn btn-sm btn-danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">❌</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateOrderStatus(orderId, status) {
+            const order = database.orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = status;
+                saveDatabase();
+                loadOrders();
+            }
+        }
+
+        // CRUD Functions for Locket Packages
+        function openLocketPackageModal(packageId = null) {
+            const modal = document.getElementById('locketPackageModal');
+            const title = document.getElementById('locketPackageModalTitle');
+            const form = document.getElementById('locketPackageForm');
+            
+            if (packageId) {
+                title.textContent = 'Sửa Gói Locket';
+                const package = database.locket_packages.find(p => p.id === packageId);
+                if (package) {
+                    document.getElementById('locketPackageName').value = package.name;
+                    document.getElementById('locketPackageDuration').value = package.duration;
+                    document.getElementById('locketPackagePrice').value = package.price;
+                    document.getElementById('locketPackageDescription').value = package.description;
+                    document.getElementById('locketPackageFeatures').value = package.features;
+                    document.getElementById('locketPackageStatus').value = package.status;
+                    form.dataset.packageId = packageId;
+                }
+            } else {
+                title.textContent = 'Thêm Gói Locket';
+                form.reset();
+                delete form.dataset.packageId;
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeLocketPackageModal() {
+            document.getElementById('locketPackageModal').style.display = 'none';
+        }
+
+        function saveLocketPackage() {
+            const form = document.getElementById('locketPackageForm');
+            const name = document.getElementById('locketPackageName').value;
+            const duration = document.getElementById('locketPackageDuration').value;
+            const price = document.getElementById('locketPackagePrice').value;
+            const description = document.getElementById('locketPackageDescription').value;
+            const features = document.getElementById('locketPackageFeatures').value;
+            const status = document.getElementById('locketPackageStatus').value;
+            
+            if (!name || !duration || !price || !description) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+            
+            const packageId = form.dataset.packageId;
+            
+            if (packageId) {
+                // Update existing package
+                const package = database.locket_packages.find(p => p.id === parseInt(packageId));
+                if (package) {
+                    package.name = name;
+                    package.duration = duration;
+                    package.price = parseInt(price);
+                    package.description = description;
+                    package.features = features;
+                    package.status = status;
+                }
+            } else {
+                // Add new package
+                const newId = Math.max(...database.locket_packages.map(p => p.id), 0) + 1;
+                database.locket_packages.push({
+                    id: newId,
+                    name: name,
+                    duration: duration,
+                    price: parseInt(price),
+                    description: description,
+                    status: status,
+                    order: database.locket_packages.length + 1,
+                    features: features,
+                    created_at: new Date().toISOString()
+                });
+            }
+            
+            saveDatabase();
+            loadLocketPackages();
+            closeLocketPackageModal();
+        }
+
+        function deleteLocketPackage(packageId) {
+            if (confirm('Bạn có chắc muốn xóa gói Locket này?')) {
+                database.locket_packages = database.locket_packages.filter(p => p.id !== packageId);
+                saveDatabase();
+                loadLocketPackages();
+            }
+        }
+
+        function loadLocketPackages() {
+            const tbody = document.getElementById('locket-packages-table');
+            tbody.innerHTML = database.locket_packages.map(pkg => `
+                <tr>
+                    <td>${pkg.id}</td>
+                    <td>${pkg.name}</td>
+                    <td>${pkg.duration}</td>
+                    <td>${new Intl.NumberFormat('vi-VN').format(pkg.price)}₫</td>
+                    <td>${pkg.description}</td>
+                    <td><span class="status-${pkg.status}">${pkg.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openLocketPackageModal(${pkg.id})">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLocketPackage(${pkg.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Image Upload Functions
+        function previewImage(input, previewId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    const img = document.getElementById(previewId + 'Img');
+                    img.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeImagePreview(previewId) {
+            const preview = document.getElementById(previewId);
+            const img = document.getElementById(previewId + 'Img');
+            const fileInput = document.getElementById('productImageFile');
+            const urlInput = document.getElementById('productImage');
+            
+            preview.style.display = 'none';
+            img.src = '';
+            fileInput.value = '';
+            urlInput.value = '';
+        }
+
+        function loadImageFromUrl(url) {
+            if (url && url.trim() !== '') {
+                const preview = document.getElementById('productImagePreview');
+                const img = document.getElementById('productImagePreviewImg');
+                
+                // Test if image loads successfully
+                const testImg = new Image();
+                testImg.onload = function() {
+                    img.src = url;
+                    preview.style.display = 'block';
+                };
+                testImg.onerror = function() {
+                    alert('Không thể load ảnh từ URL này. Vui lòng kiểm tra lại URL.');
+                    document.getElementById('productImage').value = '';
+                };
+                testImg.src = url;
+            }
+        }
+
+        async function uploadImage(file, type) {
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('type', type);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.imageUrl;
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Lỗi upload ảnh: ' + error.message);
+                return null;
+            }
+        }
+
+        // Login function
+        async function login() {
+            const twoFaCode = document.getElementById('2fa-code').value;
+            const qrSetup = document.getElementById('qr-setup');
+
+            if (!twoFaCode) {
+                alert('Vui lòng nhập mã 2FA!');
+                return;
+            }
+
+            // First time setup - show QR code
+            if (!localStorage.getItem('2faSecret')) {
+                await setup2FA();
+                qrSetup.style.display = 'block';
+            } else {
+                // Verify 2FA code
+                await verify2FA(twoFaCode);
+            }
+        }
+
+        // Setup 2FA
+        async function setup2FA() {
+            try {
+                const response = await fetch('/api/2fa/setup');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSecret = data.secret;
+                    document.getElementById('qr-code').innerHTML = `<img src="${data.qrCodeUrl}" alt="QR Code" style="max-width: 200px;">`;
+                    document.getElementById('manual-key').value = data.manualEntryKey;
+                }
+            } catch (error) {
+                console.error('Error setting up 2FA:', error);
+                alert('Lỗi khi thiết lập 2FA!');
+            }
+        }
+
+        // Verify 2FA setup
+        async function verify2FASetup() {
+            const twoFaCode = document.getElementById('2fa-code').value;
+            if (!twoFaCode) {
+                alert('Vui lòng nhập mã 2FA để xác thực!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: twoFaCode,
+                        secret: currentSecret,
+                        isSetup: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('2faSecret', currentSecret);
+                    document.getElementById('qr-setup').style.display = 'none';
+                    document.getElementById('2fa-group').style.display = 'block';
+                    alert('✅ 2FA đã được thiết lập thành công!');
+                } else {
+                    alert('❌ Mã 2FA không đúng! Vui lòng thử lại.');
+                }
+            } catch (error) {
+                console.error('Error verifying 2FA:', error);
+                alert('Lỗi khi xác thực 2FA!');
+            }
+        }
+
+        // Verify 2FA during login
+        async function verify2FA(token) {
+            // Don't need to pass secret, server will use stored secret
+            try {
+                const response = await fetch('/api/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.querySelector('.admin-container').style.display = 'flex';
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    alert('Đăng nhập thành công!');
+                    loadDatabase();
+                } else {
+                    alert('Mã 2FA không đúng!');
+                }
+            } catch (error) {
+                console.error('Error verifying 2FA:', error);
+                alert('Lỗi khi xác thực 2FA!');
+            }
+        }
+
+        // Copy manual key
+        function copyManualKey() {
+            const manualKey = document.getElementById('manual-key');
+            manualKey.select();
+            document.execCommand('copy');
+            alert('📋 Đã copy mã thủ công!');
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            document.getElementById('loginModal').style.display = 'none';
+            document.querySelector('.admin-container').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

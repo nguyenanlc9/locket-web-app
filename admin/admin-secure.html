@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Admin Secure - Quản Lý Dịch Vụ Premium</title>
+    <link rel="stylesheet" href="admin.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal" style="display: block;">
+        <div class="modal-content login-content">
+            <div class="login-header">
+                <h2>🔐 Admin Authentication</h2>
+                <p>Đăng nhập để truy cập Admin Panel</p>
+            </div>
+            
+            <div class="login-form">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="admin-username" placeholder="Nhập username admin">
+                </div>
+                
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="admin-password" placeholder="Nhập mật khẩu">
+                </div>
+                
+                <div class="form-group">
+                    <label>Google 2FA Code:</label>
+                    <input type="text" id="google-2fa" placeholder="Nhập mã 6 số từ Google Authenticator" maxlength="6">
+                </div>
+                
+                <div class="login-actions">
+                    <button class="btn btn-primary" onclick="authenticateAdmin()">🔐 Đăng Nhập</button>
+                    <button class="btn btn-secondary" onclick="setupGoogle2FA()">📱 Thiết Lập 2FA</button>
+                </div>
+                
+                <div class="google-auth-section">
+                    <div id="g_id_onload"
+                         data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                         data-callback="handleGoogleAuth"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin" 
+                         data-type="standard"
+                         data-size="large"
+                         data-theme="dark"
+                         data-text="sign_in_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fixed Header -->
+    <div class="admin-header" style="display: none;">
+        <h1>🔐 Admin Secure - Quản Lý Dịch Vụ Premium</h1>
+        <div class="admin-actions">
+            <span class="admin-user" id="admin-user-info">👤 Admin</span>
+            <button class="btn btn-secondary" onclick="logoutAdmin()">🚪 Đăng Xuất</button>
+        </div>
+    </div>
+
+    <div class="admin-container" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>🌙 Nightmarket</h2>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="active" onclick="showSection('dashboard')">📊 Dashboard</a></li>
+                <li><a href="#categories" onclick="showSection('categories')">📁 Danh Mục</a></li>
+                <li><a href="#products" onclick="showSection('products')">📦 Sản Phẩm</a></li>
+                <li><a href="#orders" onclick="showSection('orders')">🛒 Đơn Hàng</a></li>
+                <li><a href="#settings" onclick="showSection('settings')">⚙️ Cài Đặt</a></li>
+                <li><a href="#locket-config" onclick="showSection('locket-config')">🔑 Locket Config</a></li>
+                <li><a href="#locket-packages" onclick="showSection('locket-packages')">📦 Gói Locket</a></li>
+                <li><a href="#payment-config" onclick="showSection('payment-config')">💳 Thanh Toán</a></li>
+                <li><a href="#telegram-notify" onclick="showSection('telegram-notify')">📱 Telegram</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section">
+                <div class="section-header">
+                    <h2>📊 Tổng Quan Hệ Thống</h2>
+                    <div class="last-updated" id="last-updated">Đang tải...</div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="icon">📦</div>
+                        <div class="number" id="total-products">0</div>
+                        <div class="label">Sản Phẩm</div>
+                        <div class="sub-label">Tổng số sản phẩm</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🛒</div>
+                        <div class="number" id="total-orders">0</div>
+                        <div class="label">Đơn Hàng</div>
+                        <div class="sub-label">Tổng số đơn hàng</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">💰</div>
+                        <div class="number" id="total-revenue">0₫</div>
+                        <div class="label">Doanh Thu</div>
+                        <div class="sub-label">Tổng doanh thu</div>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <h3>🚀 Thao Tác Nhanh</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="showSection('products')">📦 Quản Lý Sản Phẩm</button>
+                        <button class="btn btn-primary" onclick="showSection('orders')">🛒 Xem Đơn Hàng</button>
+                        <button class="btn btn-secondary" onclick="showSection('settings')">⚙️ Cài Đặt</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Config Section -->
+            <div id="payment-config-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>💳 Cấu Hình Thanh Toán</h2>
+                </div>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label>Ngân hàng:</label>
+                        <input type="text" id="payment-bank-name" placeholder="MBBank">
+                    </div>
+                    <div class="form-group">
+                        <label>Số tài khoản:</label>
+                        <input type="text" id="payment-account-number" placeholder="1613072005">
+                    </div>
+                    <div class="form-group">
+                        <label>Chủ tài khoản:</label>
+                        <input type="text" id="payment-account-holder" placeholder="NGUYEN HUYNH TUONG AN">
+                    </div>
+                    <div class="form-group">
+                        <label>Giá sản phẩm (₫):</label>
+                        <input type="number" id="payment-product-price" placeholder="30000">
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="savePaymentConfig()">💾 Lưu Cấu Hình Thanh Toán</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telegram Notification Section -->
+            <div id="telegram-notify-section" class="content-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📱 Cấu Hình Telegram</h2>
+                </div>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label>Bot Token:</label>
+                        <input type="text" id="telegram-bot-token" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz">
+                    </div>
+                    <div class="form-group">
+                        <label>Chat ID:</label>
+                        <input type="text" id="telegram-chat-id" placeholder="-1001234567890">
+                    </div>
+                    <div class="form-group">
+                        <label>Trạng thái:</label>
+                        <select id="telegram-status">
+                            <option value="active">Hoạt động</option>
+                            <option value="inactive">Tạm dừng</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>Thông báo khi có đơn hàng mới:</label>
+                        <input type="checkbox" id="telegram-new-order" checked>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>Thông báo khi thanh toán thành công:</label>
+                        <input type="checkbox" id="telegram-payment-success" checked>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveTelegramConfig()">💾 Lưu Cấu Hình Telegram</button>
+                        <button class="btn btn-secondary" onclick="testTelegramNotification()">🧪 Test Thông Báo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication state
+        let isAuthenticated = false;
+        let adminUser = null;
+        let database = {};
+
+        // Admin credentials (in production, use proper authentication)
+        const ADMIN_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin123',
+            google2fa: '123456' // Demo 2FA code
+        };
+
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = localStorage.getItem('admin_token');
+            const user = localStorage.getItem('admin_user');
+            
+            if (token && user) {
+                isAuthenticated = true;
+                adminUser = JSON.parse(user);
+                showAdminPanel();
+            } else {
+                showLoginModal();
+            }
+        }
+
+        // Show login modal
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+            document.querySelector('.admin-container').style.display = 'none';
+            document.querySelector('.admin-header').style.display = 'none';
+        }
+
+        // Show admin panel
+        function showAdminPanel() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.querySelector('.admin-container').style.display = 'flex';
+            document.querySelector('.admin-header').style.display = 'flex';
+            
+            // Update admin user info
+            document.getElementById('admin-user-info').textContent = `👤 ${adminUser.name || 'Admin'}`;
+            
+            // Load data
+            loadFallbackData();
+        }
+
+        // Authenticate admin
+        function authenticateAdmin() {
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            const google2fa = document.getElementById('google-2fa').value;
+
+            if (username === ADMIN_CREDENTIALS.username && 
+                password === ADMIN_CREDENTIALS.password && 
+                google2fa === ADMIN_CREDENTIALS.google2fa) {
+                
+                // Generate token
+                const token = 'admin_token_' + Date.now();
+                adminUser = {
+                    name: username,
+                    loginTime: new Date().toISOString()
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('admin_token', token);
+                localStorage.setItem('admin_user', JSON.stringify(adminUser));
+                
+                isAuthenticated = true;
+                showAdminPanel();
+                
+                alert('✅ Đăng nhập thành công!');
+            } else {
+                alert('❌ Thông tin đăng nhập không chính xác!');
+            }
+        }
+
+        // Setup Google 2FA
+        function setupGoogle2FA() {
+            alert('📱 Hướng dẫn thiết lập Google 2FA:\n\n1. Tải app Google Authenticator\n2. Quét QR code\n3. Nhập mã 6 số để xác thực\n\nDemo: Sử dụng mã 123456');
+        }
+
+        // Handle Google Auth
+        function handleGoogleAuth(response) {
+            console.log('Google Auth Response:', response);
+            // In production, verify the Google token with your backend
+            alert('✅ Google Authentication thành công!');
+        }
+
+        // Logout admin
+        function logoutAdmin() {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_user');
+            isAuthenticated = false;
+            adminUser = null;
+            showLoginModal();
+            alert('🚪 Đã đăng xuất!');
+        }
+
+        // Load fallback data
+        function loadFallbackData() {
+            database = {
+                categories: [
+                    { id: 1, name: "ChatGPT & AI", description: "Dịch vụ ChatGPT, Claude, Gemini", icon: "🤖" },
+                    { id: 2, name: "YouTube Premium", description: "YouTube Premium, Music, TV", icon: "📺" },
+                    { id: 3, name: "CapCut Pro", description: "CapCut Pro, Adobe Premiere", icon: "✂️" }
+                ],
+                products: [
+                    { id: 1, category_id: 1, name: "ChatGPT Plus 1 Tháng", price: 200000, stock: 50, status: "active" },
+                    { id: 2, category_id: 1, name: "Claude Pro 1 Tháng", price: 180000, stock: 30, status: "active" },
+                    { id: 3, category_id: 2, name: "YouTube Premium 1 Tháng", price: 150000, stock: 100, status: "active" }
+                ],
+                orders: [
+                    { id: "LOCKET1760681418254", customer_name: "sad", product_name: "Locket Gold Key", total: 30000, status: "pending", created_at: "2025-10-17T06:10:18.254Z" },
+                    { id: "LOCKET1760681705580", customer_name: "Khách hàng", product_name: "Locket Gold Key", total: 30000, status: "pending", created_at: "2025-10-17T06:15:05.580Z" }
+                ],
+                locket_packages: [
+                    { id: 1, name: "Locket Gold Key", duration: "1 Tháng", price: 30000, description: "Gói Locket Gold Key với tốc độ cao và ổn định", status: "active" }
+                ],
+                settings: {
+                    site_name: "MMO Services Store",
+                    site_description: "Cửa hàng dịch vụ MMO uy tín - ChatGPT, YouTube, CapCut, Netflix và nhiều hơn nữa!",
+                    contact_email: "admin@andev.site",
+                    contact_phone: "0123456789",
+                    payment_config: {
+                        bankName: "MBBank",
+                        accountNumber: "1613072005",
+                        accountHolder: "NGUYEN HUYNH TUONG AN",
+                        productPrice: 30000
+                    },
+                    telegram_config: {
+                        botToken: "",
+                        chatId: "",
+                        status: "inactive",
+                        notifyNewOrder: true,
+                        notifyPaymentSuccess: true
+                    }
+                }
+            };
+            updateStats();
+        }
+
+        // Update stats
+        function updateStats() {
+            const productsCount = database.products?.length || 0;
+            const ordersCount = database.orders?.length || 0;
+            const totalRevenue = database.orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+            
+            // Update last updated time
+            const lastUpdatedElement = document.getElementById('last-updated');
+            if (lastUpdatedElement) {
+                lastUpdatedElement.textContent = `Cập nhật lúc: ${new Date().toLocaleString('vi-VN')}`;
+            }
+            
+            // Animate numbers
+            animateNumber('total-products', productsCount);
+            animateNumber('total-orders', ordersCount);
+            animateNumber('total-revenue', totalRevenue, '₫');
+        }
+
+        // Animate number counting
+        function animateNumber(elementId, targetValue, suffix = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const startValue = 0;
+            const duration = 1000;
+            const startTime = performance.now();
+            
+            function updateNumber(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuart);
+                
+                if (suffix === '₫') {
+                    element.textContent = new Intl.NumberFormat('vi-VN').format(currentValue) + suffix;
+                } else {
+                    element.textContent = currentValue;
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateNumber);
+                }
+            }
+            
+            requestAnimationFrame(updateNumber);
+        }
+
+        // Show section
+        function showSection(section) {
+            if (!isAuthenticated) {
+                alert('❌ Vui lòng đăng nhập trước!');
+                return;
+            }
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-menu a').forEach(el => el.classList.remove('active'));
+            
+            // Show selected section
+            let sectionId = section + '-section';
+            
+            if (section === 'payment-config') {
+                sectionId = 'payment-config-section';
+                loadPaymentConfig(); // Load current config when showing payment section
+            } else if (section === 'telegram-notify') {
+                sectionId = 'telegram-notify-section';
+            }
+            
+            const sectionElement = document.getElementById(sectionId);
+            if (sectionElement) {
+                sectionElement.style.display = 'block';
+            }
+            
+            // Add active class to clicked nav item
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // Load payment config from server
+        async function loadPaymentConfig() {
+            try {
+                const response = await fetch('/api/payment-config');
+                const data = await response.json();
+                
+                if (data.success && data.config) {
+                    const config = data.config;
+                    document.getElementById('payment-bank-name').value = config.bankName || '';
+                    document.getElementById('payment-account-number').value = config.accountNumber || '';
+                    document.getElementById('payment-account-holder').value = config.accountHolder || '';
+                    document.getElementById('payment-product-price').value = config.productPrice || 30000;
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+            }
+        }
+
+        // Save Payment Config
+        async function savePaymentConfig() {
+            if (!isAuthenticated) {
+                alert('❌ Vui lòng đăng nhập trước!');
+                return;
+            }
+            
+            const paymentConfig = {
+                bankName: document.getElementById('payment-bank-name').value,
+                accountNumber: document.getElementById('payment-account-number').value,
+                accountHolder: document.getElementById('payment-account-holder').value,
+                productPrice: parseInt(document.getElementById('payment-product-price').value) || 30000
+            };
+
+            // Save to server using payment config API
+            try {
+                const response = await fetch('/api/payment-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentConfig)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('✅ Cấu hình thanh toán đã được lưu và đồng bộ!');
+                    // Update local database
+                    if (!database.settings) database.settings = {};
+                    database.settings.payment_config = paymentConfig;
+                } else {
+                    alert('⚠️ Lỗi khi lưu cấu hình: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving payment config:', error);
+                alert('❌ Lỗi kết nối server. Vui lòng thử lại!');
+            }
+        }
+
+        // Save Telegram Config
+        function saveTelegramConfig() {
+            if (!isAuthenticated) {
+                alert('❌ Vui lòng đăng nhập trước!');
+                return;
+            }
+            
+            if (!database.settings) database.settings = {};
+            
+            database.settings.telegram_config = {
+                botToken: document.getElementById('telegram-bot-token').value,
+                chatId: document.getElementById('telegram-chat-id').value,
+                status: document.getElementById('telegram-status').value,
+                notifyNewOrder: document.getElementById('telegram-new-order').checked,
+                notifyPaymentSuccess: document.getElementById('telegram-payment-success').checked
+            };
+
+            alert('✅ Cấu hình Telegram đã được lưu!');
+        }
+
+        // Test Telegram Notification
+        function testTelegramNotification() {
+            if (!isAuthenticated) {
+                alert('❌ Vui lòng đăng nhập trước!');
+                return;
+            }
+            
+            const botToken = document.getElementById('telegram-bot-token').value;
+            const chatId = document.getElementById('telegram-chat-id').value;
+            
+            if (!botToken || !chatId) {
+                alert('❌ Vui lòng nhập Bot Token và Chat ID!');
+                return;
+            }
+
+            alert('✅ Test thông báo thành công!');
+        }
+
+        // Initialize
+        window.addEventListener('load', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thanh Toán VietQR - MMO Services Store</title>
+    <title>Thanh Toán VietQR - Locket Gold</title>
     <style>
         * {
             margin: 0;
@@ -13,21 +13,18 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #533483 75%, #e94560 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            color: #fff;
         }
 
         .container {
             max-width: 600px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
+            background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header {
@@ -47,16 +44,15 @@
         }
 
         .order-info {
-            background: rgba(255, 255, 255, 0.05);
+            background: #f5f7fa;
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 30px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .order-info h3 {
-            color: #fff;
+            color: #333;
             margin-bottom: 15px;
         }
 
@@ -65,7 +61,7 @@
             justify-content: space-between;
             margin: 10px 0;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #eee;
         }
 
         .info-row:last-child {
@@ -77,7 +73,7 @@
             margin: 30px 0;
             padding: 30px;
             background: white;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid #eee;
             border-radius: 20px;
         }
 
@@ -88,15 +84,14 @@
         }
 
         .bank-info {
-            background: rgba(76, 175, 80, 0.1);
+            background: #e8f5e8;
             padding: 25px;
             border-radius: 15px;
             margin: 30px 0;
-            border: 1px solid rgba(76, 175, 80, 0.2);
         }
 
         .bank-info h3 {
-            color: #4caf50;
+            color: #2e7d32;
             margin-bottom: 20px;
             text-align: center;
         }
@@ -108,7 +103,7 @@
         }
 
         .bank-detail {
-            background: rgba(255, 255, 255, 0.1);
+            background: white;
             padding: 15px;
             border-radius: 10px;
             text-align: center;
@@ -116,26 +111,25 @@
 
         .bank-detail .label {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #666;
             margin-bottom: 5px;
         }
 
         .bank-detail .value {
             font-weight: bold;
-            color: #fff;
+            color: #333;
             font-size: 14px;
         }
 
         .instructions {
-            background: rgba(255, 193, 7, 0.1);
+            background: #fff3e0;
             padding: 25px;
             border-radius: 15px;
             margin: 30px 0;
-            border: 1px solid rgba(255, 193, 7, 0.2);
         }
 
         .instructions h3 {
-            color: #ffc107;
+            color: #f57c00;
             margin-bottom: 20px;
             text-align: center;
         }
@@ -150,7 +144,7 @@
             margin: 15px 0;
             padding-left: 40px;
             position: relative;
-            color: #fff;
+            color: #333;
             line-height: 1.6;
         }
 
@@ -159,8 +153,8 @@
             position: absolute;
             left: 0;
             top: 0;
-            background: #ffc107;
-            color: #000;
+            background: #f57c00;
+            color: white;
             width: 25px;
             height: 25px;
             border-radius: 50%;
@@ -189,9 +183,8 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: #eee;
+            color: #333;
         }
 
         .btn-primary {
@@ -208,9 +201,8 @@
             margin: 20px 0;
             padding: 15px;
             border-radius: 10px;
-            background: rgba(33, 150, 243, 0.1);
-            color: #2196f3;
-            border: 1px solid rgba(33, 150, 243, 0.2);
+            background: #e3f2fd;
+            color: #1976d2;
         }
 
         .success-section {
@@ -332,10 +324,6 @@
                     <span id="orderId">Loading...</span>
                 </div>
                 <div class="info-row">
-                    <span>Sản phẩm:</span>
-                    <span id="productName">Loading...</span>
-                </div>
-                <div class="info-row">
                     <span>Số tiền:</span>
                     <span id="amount">Loading...</span>
                 </div>
@@ -364,15 +352,15 @@
                     </div>
                     <div class="bank-detail">
                         <div class="label">Số tài khoản</div>
-                        <div class="value" id="accountNumber">Loading...</div>
+                        <div class="value" id="accountNumber">113366668888</div>
                     </div>
                     <div class="bank-detail">
                         <div class="label">Chủ tài khoản</div>
-                        <div class="value" id="accountHolder">Loading...</div>
+                        <div class="value" id="accountHolder">NGUYEN VAN A</div>
                     </div>
                     <div class="bank-detail">
                         <div class="label">Nội dung</div>
-                        <div class="value" id="transferContent">Loading...</div>
+                        <div class="value" id="transferContent">LOCKET ORDER</div>
                     </div>
                 </div>
             </div>
@@ -396,12 +384,13 @@
                     <div class="success-icon">✅</div>
                     <div class="success-message">
                         <h4>Key kích hoạt đã được gửi!</h4>
-                        <p>Vui lòng kiểm tra email để nhận key kích hoạt.</p>
+                        <p>Vui lòng kiểm tra email để nhận key kích hoạt Locket Gold.</p>
                     </div>
                 </div>
                 <div class="success-actions">
-                    <button class="btn btn-primary" onclick="goToHome()">🏠 Về Trang Chủ</button>
+                    <button class="btn btn-primary" onclick="goToActivation()">🚀 Kích Hoạt Ngay</button>
                     <button class="btn btn-secondary" onclick="downloadKeys()">📥 Tải Key</button>
+                    <button class="btn btn-secondary" onclick="installShadowrocket()">📱 Cài Đặt Shadowrocket</button>
                 </div>
             </div>
 
@@ -422,7 +411,6 @@
     <script>
         let orderId = '';
         let amount = 0;
-        let productName = '';
         let content = '';
 
         // Get data from URL params
@@ -430,14 +418,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             orderId = urlParams.get('orderId') || '';
             amount = parseInt(urlParams.get('amount')) || 30000;
-            productName = urlParams.get('productName') || 'MMO Service';
             const customer = urlParams.get('customer') || '';
             
-            content = `MMO ${orderId}`;
+            content = `LOCKET ${orderId}`;
             
             // Update UI
             document.getElementById('orderId').textContent = orderId;
-            document.getElementById('productName').textContent = productName;
             document.getElementById('amount').textContent = new Intl.NumberFormat('vi-VN').format(amount) + '₫';
             document.getElementById('content').textContent = content;
             document.getElementById('transferContent').textContent = content;
@@ -568,14 +554,44 @@ Số tiền: ${new Intl.NumberFormat('vi-VN').format(amount)}₫`;
             successSection.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Go to home page
-        function goToHome() {
-            window.location.href = '/';
+        // Go to activation page
+        function goToActivation() {
+            window.location.href = 'locket.html';
         }
 
         // Download keys
         function downloadKeys() {
+            // This would typically download the activation keys
+            // For now, we'll show an alert
             alert('📥 Tính năng tải key sẽ được cập nhật sớm!');
+        }
+
+        // Install Shadowrocket module
+        function installShadowrocket() {
+            const shadowrocketUrl = 'shadowrocket://install/?module=@https://raw.githubusercontent.com/vuong2023/shad/main/modules/Locket_ohb.sgmodule';
+            
+            // Try to open Shadowrocket
+            window.location.href = shadowrocketUrl;
+            
+            // Show instructions if Shadowrocket doesn't open
+            setTimeout(() => {
+                const installInstructions = `
+📱 HƯỚNG DẪN CÀI ĐẶT SHADOWROCKET:
+
+1. Mở app Shadowrocket trên iPhone
+2. Nhấn vào tab "Module" ở dưới
+3. Nhấn nút "+" để thêm module mới
+4. Dán link này vào:
+   https://raw.githubusercontent.com/vuong2023/shad/main/modules/Locket_ohb.sgmodule
+5. Nhấn "Tải xuống" và "Cài đặt"
+
+Hoặc nhấn vào link dưới đây:
+                `;
+                
+                if (confirm(installInstructions + '\n\nBạn có muốn mở link cài đặt không?')) {
+                    window.open('https://raw.githubusercontent.com/vuong2023/shad/main/modules/Locket_ohb.sgmodule', '_blank');
+                }
+            }, 2000);
         }
 
         // Auto check payment every 30 seconds
